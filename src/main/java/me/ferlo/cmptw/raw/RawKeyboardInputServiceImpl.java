@@ -29,17 +29,18 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     private final Object lock = new Object();
     private volatile boolean registered;
 
-    private final Collection<RawInputKeyListener> listeners = ConcurrentHashMap.newKeySet();
     private final ConcurrentMap<HANDLE, RawInputDevice> devices = new ConcurrentHashMap<>();
 
     private HMODULE hInst;
     private WNDCLASSEX wndCls;
     private HWND hWnd;
-    private Future<?> pumpEventFuture;
+    private MSG msg;
+    private Thread wndThread;
 
     private RAWINPUT cachedRawInputObj;
     private Memory cachedRawInputMemory;
 
+    private List<RawKeyboardInputEvent> currentEvents;
     private final ExecutorService pumpExecutor = Executors.newSingleThreadExecutor(r -> {
         final var th = Executors.defaultThreadFactory().newThread(r);
         th.setName("RawKeyboardInputServiceImpl-message-pump");
@@ -62,75 +63,47 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
                 return;
 
             registered = true;
-            final CompletableFuture<Void> startupFuture = new CompletableFuture<>();
-            pumpEventFuture = pumpExecutor.submit(() -> {
-                try {
-                    // register window
-                    if (hInst == null) {
-                        hInst = Kernel32.INSTANCE.GetModuleHandle(null);
-                        if (hInst == null)
-                            throw new RawInputException();
-                    }
-
-                    wndCls = new WNDCLASSEX();
-                    wndCls.hInstance = hInst;
-                    wndCls.lpszClassName = "RawKeyboardInputServiceImpl";
-                    wndCls.lpfnWndProc = (WindowProc) this::wndProc;
-
-                    if (USER32.RegisterClassEx(wndCls).intValue() == 0)
+            waitFutureAndPropagateException(pumpExecutor.submit(() -> {
+                // register window
+                if (hInst == null) {
+                    hInst = Kernel32.INSTANCE.GetModuleHandle(null);
+                    if (hInst == null)
                         throw new RawInputException();
-
-                    // Create an invisible Message-Only Window (https://msdn.microsoft.com/library/windows/desktop/ms632599.aspx#message_only)
-                    final var windowHandle = USER32.CreateWindowEx(
-                            0, wndCls.lpszClassName, null, 0,
-                            0, 0, 0, 0, HWND_MESSAGE, null, hInst, null);
-                    if (windowHandle == null)
-                        throw new RawInputException();
-                    this.hWnd = new HWND(windowHandle.getPointer());
-
-                    // Register handler
-                    final RAWINPUTDEVICE keyboardDevice = new RAWINPUTDEVICE();
-                    keyboardDevice.usUsagePage = new USHORT(HID_USAGE_PAGE_GENERIC);
-                    keyboardDevice.usUsage = new USHORT(HID_USAGE_GENERIC_KEYBOARD);
-                    keyboardDevice.dwFlags = RIDEV_INPUTSINK;
-                    keyboardDevice.hwndTarget = hWnd;
-
-                    if (!USER32.RegisterRawInputDevices(new RAWINPUTDEVICE[]{keyboardDevice}, 1, keyboardDevice.sizeof()))
-                        throw new RawInputException();
-
-                    // TODO: register change notifs
-
-                    // Get all current devices
-                    devices.putAll(getCurrentDeviceList());
-
-                    // Startup done
-                    startupFuture.complete(null);
-                } catch (Throwable t) {
-                    startupFuture.completeExceptionally(t);
-                    return;
                 }
 
-                // Start pumping events
-                pumpEvents();
-            });
+                wndCls = new WNDCLASSEX();
+                wndCls.hInstance = hInst;
+                wndCls.lpszClassName = "RawKeyboardInputServiceImpl";
+                wndCls.lpfnWndProc = (WindowProc) this::wndProc;
 
-            try {
-                startupFuture.get();
-            } catch (InterruptedException e) {
-                throw new RawInputException("Failed to wait for startup", e);
-            } catch (ExecutionException e) {
-                final Throwable cause = e.getCause();
-                if(cause instanceof Error || cause instanceof RuntimeException) {
-                    // Add this thread stacktrace to the exception
-                    cause.addSuppressed(new Exception("Called from here"));
+                if (USER32.RegisterClassEx(wndCls).intValue() == 0)
+                    throw new RawInputException();
 
-                    if(cause instanceof Error)
-                        throw (Error) cause;
-                    // if(cause instanceof RuntimeException)
-                    throw (RuntimeException) cause;
-                }
-                throw new RawInputException("Failed to wait for startup", cause != null ? cause : e);
-            }
+                // Create an invisible Message-Only Window (https://msdn.microsoft.com/library/windows/desktop/ms632599.aspx#message_only)
+                final var windowHandle = USER32.CreateWindowEx(
+                        0, wndCls.lpszClassName, null, 0,
+                        0, 0, 0, 0, HWND_MESSAGE, null, hInst, null);
+                if (windowHandle == null)
+                    throw new RawInputException();
+                this.hWnd = new HWND(windowHandle.getPointer());
+                this.msg = new MSG();
+                this.wndThread = Thread.currentThread();
+
+                // Register handler
+                final RAWINPUTDEVICE keyboardDevice = new RAWINPUTDEVICE();
+                keyboardDevice.usUsagePage = new USHORT(HID_USAGE_PAGE_GENERIC);
+                keyboardDevice.usUsage = new USHORT(HID_USAGE_GENERIC_KEYBOARD);
+                keyboardDevice.dwFlags = RIDEV_INPUTSINK;
+                keyboardDevice.hwndTarget = hWnd;
+
+                if (!USER32.RegisterRawInputDevices(new RAWINPUTDEVICE[]{keyboardDevice}, 1, keyboardDevice.sizeof()))
+                    throw new RawInputException();
+
+                // TODO: register change notifs
+
+                // Get all current devices
+                devices.putAll(getCurrentDeviceList());
+            }), "Failed to wait for startup");
         }
     }
 
@@ -146,8 +119,9 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
             registered = false;
             final List<Throwable> exceptions = new ArrayList<>();
 
-            pumpEventFuture.cancel(true);
             devices.clear();
+            wndThread = null;
+            msg = null;
 
             if(!USER32.DestroyWindow(hWnd))
                 exceptions.add(new RawInputException());
@@ -166,21 +140,18 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     }
 
     @Override
-    public void addListener(RawInputKeyListener listener) {
-        listeners.add(listener);
-    }
+    public List<RawKeyboardInputEvent> poll() {
+        if(Thread.currentThread() != wndThread)
+            return waitFutureAndPropagateException(pumpExecutor.submit(this::poll), "Failed to pump messages");
+        if(!registered || msg == null)
+            return Collections.emptyList();
 
-    @Override
-    public void removeListener(RawInputKeyListener listener) {
-        listeners.remove(listener);
-    }
-
-    private void pumpEvents() {
-        MSG msg = new MSG();
-        while (USER32.GetMessage(msg, hWnd, 0, 0) > 0) {
+        currentEvents = new ArrayList<>();
+        while (USER32.PeekMessage(msg, hWnd, 0, 0, PM_REMOVE)) {
             USER32.TranslateMessage(msg);
             USER32.DispatchMessage(msg);
         }
+        return currentEvents;
     }
 
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wParam, LPARAM lParam) {
@@ -231,7 +202,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         if (input.header.dwType != RIM_TYPEKEYBOARD)
             return new LRESULT(0);
 
-        final RawKeyboardInputEvent evt = new RawKeyboardInputEvent(
+        currentEvents.add(new RawKeyboardInputEvent(
                 devices.get(input.header.hDevice), // TODO: add default
                 ((input.data.keyboard.Flags.intValue() & RI_KEY_BREAK) != 0) ?
                         RawKeyboardInputEvent.State.UP :
@@ -242,8 +213,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
                 input.data.keyboard.VKey.intValue(),
                 input.data.keyboard.Message,
                 input.data.keyboard.ExtraInformation
-        );
-        listeners.forEach(l -> l.rawKeyEvent(evt));
+        ));
         return new LRESULT(0);
     }
 
@@ -330,5 +300,25 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         if(separatorIdx < 0)
             throw new IllegalArgumentException("Device desc is missing ; separator: " + desc);
         return desc.substring(separatorIdx + 1);
+    }
+
+    private <T> T waitFutureAndPropagateException(Future<T> future, String exception) throws RawInputException {
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            throw new RawInputException(exception, e);
+        } catch (ExecutionException e) {
+            final Throwable cause = e.getCause();
+            if(cause instanceof Error || cause instanceof RuntimeException) {
+                // Add this thread stacktrace to the exception
+                cause.addSuppressed(new Exception("Called from here"));
+
+                if(cause instanceof Error)
+                    throw (Error) cause;
+                // if(cause instanceof RuntimeException)
+                throw (RuntimeException) cause;
+            }
+            throw new RawInputException(exception, cause != null ? cause : e);
+        }
     }
 }

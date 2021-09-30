@@ -4,7 +4,6 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeInputEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-import me.ferlo.cmptw.raw.RawInputKeyListener;
 import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
 import me.ferlo.cmptw.raw.RawKeyboardInputService;
 import me.ferlo.cmptw.util.SameThreadExecutorService;
@@ -12,9 +11,10 @@ import me.ferlo.cmptw.util.SameThreadExecutorService;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class KeyboardHookServiceImpl implements KeyboardHookService {
 
@@ -43,9 +43,8 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
             nativeKeyEvent(nativeEvent);
         }
     };
-    private final RawInputKeyListener rawKeyListener = this::rawKeyEvent;
 
-    private final Queue<SavedRawEvent> rawEventQueue = new ConcurrentLinkedQueue<>();
+    private final List<SavedRawEvent> rawEventQueue = new ArrayList<>();
 
     @Override
     public void register() throws Exception {
@@ -54,12 +53,14 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                 if(!registered) {
                     registered = true;
 
-                    GlobalScreen.setEventDispatcher(new SameThreadExecutorService());
-                    GlobalScreen.registerNativeHook();
-                    GlobalScreen.addNativeKeyListener(nativeKeyListener);
-
                     RawKeyboardInputService.INSTANCE.register();
-                    RawKeyboardInputService.INSTANCE.addListener(rawKeyListener);
+
+                    GlobalScreen.registerNativeHook();
+                    // We need our hooks to be executed on the JNativeHook event generation thread
+                    // so that we can properly delete events.
+                    // Also, add it after registerNativeHook(), as it looks like otherwise it shuts it down (?)
+                    GlobalScreen.setEventDispatcher(new SameThreadExecutorService());
+                    GlobalScreen.addNativeKeyListener(nativeKeyListener);
                 }
             }
     }
@@ -74,7 +75,6 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                     GlobalScreen.removeNativeKeyListener(nativeKeyListener);
                     GlobalScreen.unregisterNativeHook();
 
-                    RawKeyboardInputService.INSTANCE.removeListener(rawKeyListener);
                     RawKeyboardInputService.INSTANCE.unregister();
                 }
             }
@@ -90,15 +90,29 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         listeners.remove(listener);
     }
 
-    private void rawKeyEvent(RawKeyboardInputEvent rawEvent) {
-        rawEventQueue.add(new SavedRawEvent(rawEvent, System.currentTimeMillis()));
-    }
-
     private void nativeKeyEvent(NativeKeyEvent nativeEvent) {
-        nativeKeyEvent0(nativeEvent);
+        try {
+            nativeKeyEvent0(nativeEvent);
+        } catch (Throwable ex) {
+            // TODO: logging
+            System.err.println("Uncaught exception in JNativeHook listener: ");
+            ex.printStackTrace();
+        }
     }
 
-    private boolean nativeKeyEvent0(NativeKeyEvent nativeEvent) {
+    private void nativeKeyEvent0(NativeKeyEvent nativeEvent) {
+        // See https://github.com/me2d13/luamacros/blob/a0bda6c4c7b38c1bceb2217a9e38bf402eaead87/src/ukeylogservice.pas#L74
+        // First search in already arrived raw messages
+        if(nativeKeyEvent0(nativeEvent, rawEventQueue))
+            return;
+        rawEventQueue.addAll(RawKeyboardInputService.INSTANCE.poll().stream()
+                .map(e -> new SavedRawEvent(e, System.currentTimeMillis()))
+                .toList());
+        nativeKeyEvent0(nativeEvent, rawEventQueue);
+    }
+
+    private boolean nativeKeyEvent0(NativeKeyEvent nativeEvent, Collection<SavedRawEvent> rawEventQueue) {
+        // See https://github.com/me2d13/luamacros/blob/a0bda6c4c7b38c1bceb2217a9e38bf402eaead87/src/ukeylogservice.pas#L101
         final long timestamp = System.currentTimeMillis();
         final var iter = rawEventQueue.iterator();
 
@@ -148,5 +162,4 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
     private record SavedRawEvent(RawKeyboardInputEvent rawEvent, long timestamp) {
     }
-
 }

@@ -69,6 +69,10 @@ public interface User32 extends com.sun.jna.platform.win32.User32 {
     int RI_KEY_E0 = 2;
     int RI_KEY_E1 = 4;
 
+    int PM_NOREMOVE = 0x0000;
+    int PM_REMOVE = 0x0001;
+    int PM_NOYIELD = 0x0002;
+
     /**
      * Defines information for the raw input devices.
      * <p>

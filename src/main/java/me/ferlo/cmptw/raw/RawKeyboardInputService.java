@@ -1,5 +1,7 @@
 package me.ferlo.cmptw.raw;
 
+import java.util.List;
+
 public interface RawKeyboardInputService {
 
     RawKeyboardInputService INSTANCE = new RawKeyboardInputServiceImpl();
@@ -8,7 +10,5 @@ public interface RawKeyboardInputService {
 
     void unregister() throws RawInputException;
 
-    void addListener(RawInputKeyListener listener);
-
-    void removeListener(RawInputKeyListener listener);
+    List<RawKeyboardInputEvent> poll();
 }
