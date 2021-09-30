@@ -4,7 +4,7 @@ import me.ferlo.cmptw.global.GlobalKeyEvent;
 import me.ferlo.cmptw.global.GlobalKeyboardHookListener;
 import me.ferlo.cmptw.global.GlobalKeyboardHookService;
 import me.ferlo.cmptw.raw.RawInputKeyListener;
-import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
+import me.ferlo.cmptw.raw.RawKeyEvent;
 import me.ferlo.cmptw.raw.RawKeyboardInputService;
 
 import java.util.Collection;
@@ -89,12 +89,12 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
         // If not found, wait for it to arrive
         final long timestamp = System.currentTimeMillis();
-        final var future = new CompletableFuture<RawKeyboardInputEvent>();
+        final var future = new CompletableFuture<RawKeyEvent>();
         final var queuedEvent = new SavedNativeEvent(globalEvent, future, timestamp);
         nativeEventQueue.add(queuedEvent);
 
         // Can't return control to the OS, need to busy wait
-        RawKeyboardInputEvent rawEvent;
+        RawKeyEvent rawEvent;
         //noinspection StatementWithEmptyBody
         while((rawEvent = future.getNow(null)) == null && System.currentTimeMillis() - timestamp < 1000);
 
@@ -109,21 +109,21 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         return false;
     }
 
-    private Optional<RawKeyboardInputEvent> globalKeyEvent0(GlobalKeyEvent globalEvent, Collection<SavedRawEvent> rawEventQueue) {
+    private Optional<RawKeyEvent> globalKeyEvent0(GlobalKeyEvent globalEvent, Collection<SavedRawEvent> rawEventQueue) {
         final long timestamp = System.currentTimeMillis();
         final var iter = rawEventQueue.iterator();
 
         while(iter.hasNext()) {
             final SavedRawEvent savedRawEvent = iter.next();
-            final RawKeyboardInputEvent rawEvent = savedRawEvent.rawEvent();
+            final RawKeyEvent rawEvent = savedRawEvent.rawEvent();
             if(timestamp - savedRawEvent.timestamp() > 5000) {
                 iter.remove();
                 continue;
             }
 
-            final boolean rawEventPressed = rawEvent.keyState() == RawKeyboardInputEvent.State.DOWN;
+            final boolean rawEventPressed = rawEvent.keyState() == RawKeyEvent.State.DOWN;
             final boolean globalEventPressed = globalEvent.isKeyDown();
-            if(rawEventPressed == globalEventPressed && rawEvent.vKey() == globalEvent.vKeyCode()) {
+            if(rawEventPressed == globalEventPressed && rawEvent.vKeyCode() == globalEvent.vKeyCode()) {
                 iter.remove();
                 return Optional.of(rawEvent);
             }
@@ -132,7 +132,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         return Optional.empty();
     }
 
-    private void rawKeyEvent(RawKeyboardInputEvent rawEvent) {
+    private void rawKeyEvent(RawKeyEvent rawEvent) {
         try {
             rawKeyEvent0(rawEvent);
         } catch (Throwable ex) {
@@ -142,7 +142,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         }
     }
 
-    private void rawKeyEvent0(RawKeyboardInputEvent rawEvent) {
+    private void rawKeyEvent0(RawKeyEvent rawEvent) {
         final long timestamp = System.currentTimeMillis();
         final var iter = nativeEventQueue.iterator();
 
@@ -157,13 +157,13 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
             }
 
             final boolean globalEventPressed = globalEvent.isKeyDown();
-            final var maybeRawEvent = Stream.<Supplier<Stream<RawKeyboardInputEvent>>>of(
+            final var maybeRawEvent = Stream.<Supplier<Stream<RawKeyEvent>>>of(
                             () -> Stream.of(rawEvent),
                             () -> RawKeyboardInputService.INSTANCE.peek().stream())
                     .flatMap(Supplier::get)
                     .filter(rawEvent0 -> {
-                        final boolean rawEventPressed = rawEvent0.keyState() == RawKeyboardInputEvent.State.DOWN;
-                        return rawEventPressed == globalEventPressed && rawEvent0.vKey() == globalEvent.vKeyCode();
+                        final boolean rawEventPressed = rawEvent0.keyState() == RawKeyEvent.State.DOWN;
+                        return rawEventPressed == globalEventPressed && rawEvent0.vKeyCode() == globalEvent.vKeyCode();
                     })
                     .findFirst();
             if(maybeRawEvent.isPresent()) {
@@ -176,14 +176,14 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         rawEventQueue.add(new SavedRawEvent(rawEvent, timestamp));
     }
 
-    private boolean dispatchEvent(RawKeyboardInputEvent rawEvent, GlobalKeyEvent globalEvent) {
+    private boolean dispatchEvent(RawKeyEvent rawEvent, GlobalKeyEvent globalEvent) {
         final KeyboardHookEvent evt = new KeyboardHookEvent(rawEvent, globalEvent);
         return listeners.stream().sequential().anyMatch(l -> l.onKeyHook(evt));
     }
 
-    private record SavedRawEvent(RawKeyboardInputEvent rawEvent, long timestamp) {
+    private record SavedRawEvent(RawKeyEvent rawEvent, long timestamp) {
     }
 
-    private record SavedNativeEvent(GlobalKeyEvent globalEvent, CompletableFuture<RawKeyboardInputEvent> future, long timestamp) {
+    private record SavedNativeEvent(GlobalKeyEvent globalEvent, CompletableFuture<RawKeyEvent> future, long timestamp) {
     }
 }

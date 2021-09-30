@@ -2,7 +2,7 @@ package me.ferlo.cmptw.hook;
 
 import me.ferlo.cmptw.global.GlobalKeyEvent;
 import me.ferlo.cmptw.raw.RawInputDevice;
-import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
+import me.ferlo.cmptw.raw.RawKeyEvent;
 
 /**
  * Extends JNativeHook event to add keyboard information fetched by raw input,
@@ -19,7 +19,7 @@ public record KeyboardHookEvent(
         boolean isKeyDown
 ) {
 
-    KeyboardHookEvent(RawKeyboardInputEvent rawEvt, GlobalKeyEvent nativeEvt) {
+    KeyboardHookEvent(RawKeyEvent rawEvt, GlobalKeyEvent nativeEvt) {
         this(
                 rawEvt.device(),
                 nativeEvt.vKeyCode(),

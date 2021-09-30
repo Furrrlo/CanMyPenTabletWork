@@ -16,5 +16,5 @@ public interface RawKeyboardInputService {
 
     void removeListener(RawInputKeyListener listener);
 
-    List<RawKeyboardInputEvent> peek();
+    List<RawKeyEvent> peek();
 }

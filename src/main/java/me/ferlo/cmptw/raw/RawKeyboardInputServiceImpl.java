@@ -14,8 +14,6 @@ import me.ferlo.cmptw.window.WindowService;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,7 +34,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     private RAWINPUT cachedRawInputObj;
     private Memory cachedRawInputMemory;
 
-    private List<RawKeyboardInputEvent> polledEvents;
+    private List<RawKeyEvent> polledEvents;
 
     RawKeyboardInputServiceImpl(WindowService windowService) {
         this.windowService = windowService;
@@ -108,7 +106,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     }
 
     @Override
-    public List<RawKeyboardInputEvent> peek() {
+    public List<RawKeyEvent> peek() {
         try {
             polledEvents = new ArrayList<>();
             windowService.peekMessages(WM_INPUT, WM_INPUT);
@@ -166,11 +164,11 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         if (input.header.dwType != RIM_TYPEKEYBOARD)
             return new LRESULT(0);
 
-        final RawKeyboardInputEvent evt = new RawKeyboardInputEvent(
+        final RawKeyEvent evt = new RawKeyEvent(
                 devices.get(input.header.hDevice), // TODO: add default
                 ((input.data.keyboard.Flags.intValue() & RI_KEY_BREAK) != 0) ?
-                        RawKeyboardInputEvent.State.UP :
-                        RawKeyboardInputEvent.State.DOWN,
+                        RawKeyEvent.State.UP :
+                        RawKeyEvent.State.DOWN,
                 input.data.keyboard.MakeCode.intValue(),
                 input.data.keyboard.Flags.intValue(),
                 input.data.keyboard.Reserved.intValue(),
@@ -183,7 +181,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         if(polledEvents != null)
             polledEvents.add(evt);
         else
-            listeners.forEach(l -> l.rawKeyEvent(evt));
+            listeners.forEach(l -> l.onRawKeyEvent(evt));
 
         return new LRESULT(0);
     }
