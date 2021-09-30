@@ -1,46 +1,28 @@
 package me.ferlo.cmptw.hook;
 
-import com.github.kwhat.jnativehook.GlobalScreen;
-import com.github.kwhat.jnativehook.NativeInputEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import me.ferlo.cmptw.global.GlobalKeyEvent;
+import me.ferlo.cmptw.global.GlobalKeyboardHookListener;
+import me.ferlo.cmptw.global.GlobalKeyboardHookService;
 import me.ferlo.cmptw.raw.RawInputKeyListener;
 import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
 import me.ferlo.cmptw.raw.RawKeyboardInputService;
-import me.ferlo.cmptw.util.SameThreadExecutorService;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class KeyboardHookServiceImpl implements KeyboardHookService {
 
-    private static final MethodHandle NATIVE_INPUT_EVENT_SET_RESERVED;
-    static {
-        try {
-            Method m = NativeInputEvent.class.getDeclaredMethod("setReserved", short.class);
-            m.setAccessible(true);
-            NATIVE_INPUT_EVENT_SET_RESERVED = MethodHandles.lookup().unreflect(m);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new AssertionError("Failed to ");
-        }
-    }
-
     private final Object lock = new Object();
     private volatile boolean registered;
 
     private final Collection<KeyboardHookListener> listeners = ConcurrentHashMap.newKeySet();
-    private final NativeKeyListener nativeKeyListener = new NativeKeyListener() {
-        @Override
-        public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
-            nativeKeyEvent(nativeEvent);
-        }
-    };
+    private final GlobalKeyboardHookListener globalKeyListener = this::globalKeyEvent;
     private final RawInputKeyListener rawKeyListener = this::rawKeyEvent;
 
     private final Queue<SavedRawEvent> rawEventQueue = new ConcurrentLinkedQueue<>();
@@ -56,12 +38,8 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                     RawKeyboardInputService.INSTANCE.register();
                     RawKeyboardInputService.INSTANCE.addListener(rawKeyListener);
 
-                    GlobalScreen.registerNativeHook();
-                    // We need our hooks to be executed on the JNativeHook event generation thread
-                    // so that we can properly delete events.
-                    // Also, add it after registerNativeHook(), as it looks like otherwise it shuts it down (?)
-                    GlobalScreen.setEventDispatcher(new SameThreadExecutorService());
-                    GlobalScreen.addNativeKeyListener(nativeKeyListener);
+                    GlobalKeyboardHookService.INSTANCE.register();
+                    GlobalKeyboardHookService.INSTANCE.addListener(globalKeyListener);
                 }
             }
     }
@@ -73,8 +51,8 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                 if (registered) {
                     registered = false;
 
-                    GlobalScreen.removeNativeKeyListener(nativeKeyListener);
-                    GlobalScreen.unregisterNativeHook();
+                    GlobalKeyboardHookService.INSTANCE.removeListener(globalKeyListener);
+                    GlobalKeyboardHookService.INSTANCE.unregister();
 
                     RawKeyboardInputService.INSTANCE.removeListener(rawKeyListener);
                     RawKeyboardInputService.INSTANCE.unregister();
@@ -92,24 +70,27 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         listeners.remove(listener);
     }
 
-    private void nativeKeyEvent(NativeKeyEvent nativeEvent) {
+    private boolean globalKeyEvent(GlobalKeyEvent globalEvent) {
         try {
-            nativeKeyEvent0(nativeEvent);
+            return globalKeyEvent0(globalEvent);
         } catch (Throwable ex) {
             // TODO: logging
             System.err.println("Uncaught exception in JNativeHook listener: ");
             ex.printStackTrace();
+            return false;
         }
     }
 
-    private void nativeKeyEvent0(NativeKeyEvent nativeEvent) {
+    private boolean globalKeyEvent0(GlobalKeyEvent globalEvent) {
         // First search in already arrived raw messages
-        if(nativeKeyEvent0(nativeEvent, rawEventQueue))
-            return;
+        final var maybeStoredRawEvent = globalKeyEvent0(globalEvent, rawEventQueue);
+        if(maybeStoredRawEvent.isPresent())
+            return dispatchEvent(maybeStoredRawEvent.get(), globalEvent);
+
         // If not found, wait for it to arrive
         final long timestamp = System.currentTimeMillis();
         final var future = new CompletableFuture<RawKeyboardInputEvent>();
-        final var queuedEvent = new SavedNativeEvent(nativeEvent, future, timestamp);
+        final var queuedEvent = new SavedNativeEvent(globalEvent, future, timestamp);
         nativeEventQueue.add(queuedEvent);
 
         // Can't return control to the OS, need to busy wait
@@ -119,14 +100,16 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
         if(rawEvent != null) {
             System.out.println("Matched in " + (System.currentTimeMillis() - timestamp));
-            dispatchEvent(rawEvent, nativeEvent);
+            return dispatchEvent(rawEvent, globalEvent);
         } else {
             System.out.println("Timeout expired, not matched");
             nativeEventQueue.remove(queuedEvent);
         }
+
+        return false;
     }
 
-    private boolean nativeKeyEvent0(NativeKeyEvent nativeEvent, Collection<SavedRawEvent> rawEventQueue) {
+    private Optional<RawKeyboardInputEvent> globalKeyEvent0(GlobalKeyEvent globalEvent, Collection<SavedRawEvent> rawEventQueue) {
         final long timestamp = System.currentTimeMillis();
         final var iter = rawEventQueue.iterator();
 
@@ -139,15 +122,14 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
             }
 
             final boolean rawEventPressed = rawEvent.keyState() == RawKeyboardInputEvent.State.DOWN;
-            final boolean nativeEventPressed = nativeEvent.getID() == NativeKeyEvent.NATIVE_KEY_PRESSED;
-            if(rawEventPressed == nativeEventPressed && rawEvent.vKey() == nativeEvent.getRawCode()) {
-                dispatchEvent(rawEvent, nativeEvent);
+            final boolean globalEventPressed = globalEvent.isKeyDown();
+            if(rawEventPressed == globalEventPressed && rawEvent.vKey() == globalEvent.vKeyCode()) {
                 iter.remove();
-                return true;
+                return Optional.of(rawEvent);
             }
         }
 
-        return false;
+        return Optional.empty();
     }
 
     private void rawKeyEvent(RawKeyboardInputEvent rawEvent) {
@@ -166,7 +148,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
         while(iter.hasNext()) {
             final SavedNativeEvent savedNativeEvent = iter.next();
-            final NativeKeyEvent nativeEvent = savedNativeEvent.nativeEvent();
+            final GlobalKeyEvent globalEvent = savedNativeEvent.globalEvent();
             System.out.println("Arrived after " + (timestamp - savedNativeEvent.timestamp()));
             if(timestamp - savedNativeEvent.timestamp() > 5000) {
                 savedNativeEvent.future.complete(null);
@@ -174,14 +156,14 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                 continue;
             }
 
-            final boolean nativeEventPressed = nativeEvent.getID() == NativeKeyEvent.NATIVE_KEY_PRESSED;
+            final boolean globalEventPressed = globalEvent.isKeyDown();
             final var maybeRawEvent = Stream.<Supplier<Stream<RawKeyboardInputEvent>>>of(
                             () -> Stream.of(rawEvent),
                             () -> RawKeyboardInputService.INSTANCE.peek().stream())
                     .flatMap(Supplier::get)
                     .filter(rawEvent0 -> {
                         final boolean rawEventPressed = rawEvent0.keyState() == RawKeyboardInputEvent.State.DOWN;
-                        return rawEventPressed == nativeEventPressed && rawEvent0.vKey() == nativeEvent.getRawCode();
+                        return rawEventPressed == globalEventPressed && rawEvent0.vKey() == globalEvent.vKeyCode();
                     })
                     .findFirst();
             if(maybeRawEvent.isPresent()) {
@@ -194,29 +176,14 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         rawEventQueue.add(new SavedRawEvent(rawEvent, timestamp));
     }
 
-    private void dispatchEvent(RawKeyboardInputEvent rawEvent, NativeKeyEvent nativeEvent) {
-        final KeyboardHookEvent evt = new KeyboardHookEvent(rawEvent, nativeEvent);
-        for(KeyboardHookListener listener : listeners) {
-            listener.keyPressed(evt);
-            if(evt.isCancelled())
-                break;
-        }
-
-        if(evt.isCancelled()) {
-            try {
-                NATIVE_INPUT_EVENT_SET_RESERVED.invoke(nativeEvent, (short) 0x01);
-            } catch (Throwable t) {
-                // TODO: better logging
-                System.err.println("Failed to invoke NativeInputEvent#setReserved(short)");
-                t.printStackTrace();
-                System.exit(-1);
-            }
-        }
+    private boolean dispatchEvent(RawKeyboardInputEvent rawEvent, GlobalKeyEvent globalEvent) {
+        final KeyboardHookEvent evt = new KeyboardHookEvent(rawEvent, globalEvent);
+        return listeners.stream().sequential().anyMatch(l -> l.onKeyHook(evt));
     }
 
     private record SavedRawEvent(RawKeyboardInputEvent rawEvent, long timestamp) {
     }
 
-    private record SavedNativeEvent(NativeKeyEvent nativeEvent, CompletableFuture<RawKeyboardInputEvent> future, long timestamp) {
+    private record SavedNativeEvent(GlobalKeyEvent globalEvent, CompletableFuture<RawKeyboardInputEvent> future, long timestamp) {
     }
 }

@@ -1,6 +1,6 @@
 package me.ferlo.cmptw.hook;
 
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import me.ferlo.cmptw.global.GlobalKeyEvent;
 import me.ferlo.cmptw.raw.RawInputDevice;
 import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
 
@@ -8,33 +8,27 @@ import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
  * Extends JNativeHook event to add keyboard information fetched by raw input,
  * such as the device which pressed the key.
  */
-public class KeyboardHookEvent extends NativeKeyEvent {
+public record KeyboardHookEvent(
+        RawInputDevice rawInputDevice,
+        int vKeyCode,
+        int repeatCount,
+        int scanCode,
+        boolean isExtendedKey,
+        boolean isAltPressed,
+        boolean wasKeyDown,
+        boolean isKeyDown
+) {
 
-    private final RawInputDevice rawInputDevice;
-    private boolean cancelled;
-
-    KeyboardHookEvent(RawKeyboardInputEvent rawEvt, NativeKeyEvent nativeEvt) {
-        super(nativeEvt.getID(), nativeEvt.getModifiers(), nativeEvt.getRawCode(), nativeEvt.getKeyCode(), nativeEvt.getKeyChar(), nativeEvt.getKeyLocation());
-        rawInputDevice = rawEvt.device();
-    }
-
-    public RawInputDevice getRawInputDevice() {
-        return rawInputDevice;
-    }
-
-    public boolean isCancelled() {
-        return cancelled;
-    }
-
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
-
-    @Override
-    public String toString() {
-        return "KeyboardHookEvent{" +
-                "rawInputDevice=" + rawInputDevice.hwid() +
-                ", cancelled=" + cancelled +
-                "} " + super.paramString();
+    KeyboardHookEvent(RawKeyboardInputEvent rawEvt, GlobalKeyEvent nativeEvt) {
+        this(
+                rawEvt.device(),
+                nativeEvt.vKeyCode(),
+                nativeEvt.repeatCount(),
+                nativeEvt.scanCode(),
+                nativeEvt.isExtendedKey(),
+                nativeEvt.isAltPressed(),
+                nativeEvt.wasKeyDown(),
+                nativeEvt.isKeyDown()
+        );
     }
 }
