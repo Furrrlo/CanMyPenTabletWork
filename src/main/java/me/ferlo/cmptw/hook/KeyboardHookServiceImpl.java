@@ -98,15 +98,12 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         //noinspection StatementWithEmptyBody
         while((rawEvent = future.getNow(null)) == null && System.currentTimeMillis() - timestamp < 1000);
 
-        if(rawEvent != null) {
-            System.out.println("Matched in " + (System.currentTimeMillis() - timestamp));
-            return dispatchEvent(rawEvent, globalEvent);
-        } else {
-            System.out.println("Timeout expired, not matched");
+        if(rawEvent == null) {
             nativeEventQueue.remove(queuedEvent);
+            return false;
         }
 
-        return false;
+        return dispatchEvent(rawEvent, globalEvent);
     }
 
     private Optional<RawKeyEvent> globalKeyEvent0(GlobalKeyEvent globalEvent, Collection<SavedRawEvent> rawEventQueue) {
@@ -149,7 +146,6 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         while(iter.hasNext()) {
             final SavedNativeEvent savedNativeEvent = iter.next();
             final GlobalKeyEvent globalEvent = savedNativeEvent.globalEvent();
-            System.out.println("Arrived after " + (timestamp - savedNativeEvent.timestamp()));
             if(timestamp - savedNativeEvent.timestamp() > 5000) {
                 savedNativeEvent.future.complete(null);
                 iter.remove();
