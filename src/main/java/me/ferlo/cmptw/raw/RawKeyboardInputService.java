@@ -1,10 +1,12 @@
 package me.ferlo.cmptw.raw;
 
+import me.ferlo.cmptw.window.WindowService;
+
 import java.util.List;
 
 public interface RawKeyboardInputService {
 
-    RawKeyboardInputService INSTANCE = new RawKeyboardInputServiceImpl();
+    RawKeyboardInputService INSTANCE = new RawKeyboardInputServiceImpl(WindowService.INSTANCE);
 
     void register() throws RawInputException;
 
