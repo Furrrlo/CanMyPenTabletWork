@@ -10,5 +10,9 @@ public interface RawKeyboardInputService {
 
     void unregister() throws RawInputException;
 
-    List<RawKeyboardInputEvent> poll();
+    void addListener(RawInputKeyListener listener);
+
+    void removeListener(RawInputKeyListener listener);
+
+    List<RawKeyboardInputEvent> peek();
 }

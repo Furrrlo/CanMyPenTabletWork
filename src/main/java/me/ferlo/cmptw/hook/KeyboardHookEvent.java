@@ -11,21 +11,15 @@ import me.ferlo.cmptw.raw.RawKeyboardInputEvent;
 public class KeyboardHookEvent extends NativeKeyEvent {
 
     private final RawInputDevice rawInputDevice;
-    private final boolean isKeyPress;
     private boolean cancelled;
 
-    KeyboardHookEvent(RawKeyboardInputEvent rawEvt, NativeKeyEvent nativeEvt, boolean isKeyPress) {
+    KeyboardHookEvent(RawKeyboardInputEvent rawEvt, NativeKeyEvent nativeEvt) {
         super(nativeEvt.getID(), nativeEvt.getModifiers(), nativeEvt.getRawCode(), nativeEvt.getKeyCode(), nativeEvt.getKeyChar(), nativeEvt.getKeyLocation());
         rawInputDevice = rawEvt.device();
-        this.isKeyPress = isKeyPress;
     }
 
     public RawInputDevice getRawInputDevice() {
         return rawInputDevice;
-    }
-
-    public boolean isKeyPress() {
-        return isKeyPress;
     }
 
     public boolean isCancelled() {
@@ -40,7 +34,6 @@ public class KeyboardHookEvent extends NativeKeyEvent {
     public String toString() {
         return "KeyboardHookEvent{" +
                 "rawInputDevice=" + rawInputDevice.hwid() +
-                ", isKeyPress=" + isKeyPress +
                 ", cancelled=" + cancelled +
                 "} " + super.paramString();
     }
