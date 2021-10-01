@@ -11,9 +11,7 @@ import me.ferlo.cmptw.raw.RawKeyboardInputService;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -116,8 +114,16 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
         // Can't return control to the OS, need to busy wait
         RawKeyEvent rawEvent;
-        //noinspection StatementWithEmptyBody
-        while((rawEvent = future.getNow(null)) == null && System.currentTimeMillis() - timestamp < 1000);
+        try {
+            rawEvent = future.get(1, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException ex) {
+            // TODO: logging
+            System.err.println("Failed to wait for future");
+            ex.printStackTrace();
+            rawEvent = null;
+        } catch (TimeoutException e) {
+            rawEvent = null;
+        }
 
         if(rawEvent == null) {
             nativeEventQueue.remove(queuedEvent);
