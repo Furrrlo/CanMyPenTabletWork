@@ -436,7 +436,10 @@ public class WinToAwtHelper implements WinVK {
      * @return keyboard layout of the window in the foreground
      */
     private static HKL getForegroundKeyboardLayout() {
-        return User32.INSTANCE.GetKeyboardLayout(User32.INSTANCE.GetWindowThreadProcessId(User32.INSTANCE.GetForegroundWindow(), null));
+        final HWND foregroundWindow = User32.INSTANCE.GetForegroundWindow();
+        return foregroundWindow != null ?
+                User32.INSTANCE.GetKeyboardLayout(User32.INSTANCE.GetWindowThreadProcessId(foregroundWindow, null)) :
+                User32.INSTANCE.GetKeyboardLayout(0); // fall back to the current thread layout
     }
 
     /**
