@@ -14,15 +14,14 @@ import me.ferlo.cmptw.window.WindowService;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.sun.jna.platform.win32.WinDef.*;
-import static me.ferlo.cmptw.raw.User32.*;
+import static me.ferlo.cmptw.raw.RawInput.*;
 
 class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
 
-    private static final User32 USER32 = User32.INSTANCE;
+    private static final RawInput RAW_INPUT = RawInput.INSTANCE;
 
     private final WindowService windowService;
     private final Object lock = new Object();
@@ -57,7 +56,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
             keyboardDevice.dwFlags = RIDEV_INPUTSINK;
             keyboardDevice.hwndTarget = windowService.getHwnd();
 
-            if (!USER32.RegisterRawInputDevices(new RAWINPUTDEVICE[]{keyboardDevice}, 1, keyboardDevice.sizeof()))
+            if (!RAW_INPUT.RegisterRawInputDevices(new RAWINPUTDEVICE[]{keyboardDevice}, 1, keyboardDevice.sizeof()))
                 throw new RawInputException();
 
             windowService.addListener(WM_INPUT, this::wndProc);
@@ -139,7 +138,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         final var sizeOfHeader = new RAWINPUTHEADER().sizeof();
 
         final var inputDataSizePtr = new IntByReference();
-        if (USER32.GetRawInputData(new LPVOID(hRawInput), RID_INPUT, null, inputDataSizePtr, sizeOfHeader) < 0)
+        if (RAW_INPUT.GetRawInputData(new LPVOID(hRawInput), RID_INPUT, null, inputDataSizePtr, sizeOfHeader) < 0)
             throw new RawInputException();
 
         final int inputDataSize = inputDataSizePtr.getValue();
@@ -148,7 +147,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
                 new Memory(inputDataSize);
 
         int read;
-        if ((read = USER32.GetRawInputData(new LPVOID(hRawInput), RID_INPUT, inputData, inputDataSizePtr, sizeOfHeader)) < inputDataSize)
+        if ((read = RAW_INPUT.GetRawInputData(new LPVOID(hRawInput), RID_INPUT, inputData, inputDataSizePtr, sizeOfHeader)) < inputDataSize)
             throw new RawInputException("GetRawInputData did not return correct size (expected: " + inputDataSize + ", got: " + read + ')');
 
         final RAWINPUT input;
@@ -189,50 +188,43 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     private Map<HANDLE, RawInputDevice> getCurrentDeviceList() {
         final IntByReference numDevices = new IntByReference();
         final int sizeOfRAWINPUTDEVICELIST = new RAWINPUTDEVICELIST().sizeof();
-        if(USER32.GetRawInputDeviceList(null, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
+        if(RAW_INPUT.GetRawInputDeviceList(null, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
             throw new RawInputException();
 
         final RAWINPUTDEVICELIST[] rawDeviceList = new RAWINPUTDEVICELIST[numDevices.getValue()];
-        if(USER32.GetRawInputDeviceList(rawDeviceList, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
+        if(RAW_INPUT.GetRawInputDeviceList(rawDeviceList, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
             throw new RawInputException();
 
         return Arrays.stream(rawDeviceList)
-                .filter(rawDevice -> rawDevice.dwType == User32.RIM_TYPEKEYBOARD || rawDevice.dwType == User32.RIM_TYPEHID)
-                .map(rawDevice -> {
-                    final String hwid;
-                    try {
-                        hwid = getDeviceHwid(rawDevice.hDevice);
-                    } catch (RawInputException ex) {
-                        // TODO: proper logging
-                        ex.printStackTrace();
-                        return null; // Skip
-                    }
-
-                    String name;
-                    try {
-                        name = getDeviceNameByHwid(hwid);
-                    } catch (IllegalArgumentException ex) {
-                        // TODO: proper logging
-                        ex.printStackTrace();
-                        name = hwid;
-                    }
-
-                    return new RawInputDevice(
-                            hwid,
-                            name,
-                            rawDevice.dwType,
-                            new RAWINPUTDEVICE(rawDevice.hDevice.getPointer())
-                    );
-                })
-                .filter(Objects::nonNull)
+                .filter(rawDevice -> rawDevice.dwType == RawInput.RIM_TYPEKEYBOARD || rawDevice.dwType == RawInput.RIM_TYPEHID)
                 .collect(Collectors.toMap(
-                        d -> new HANDLE(d.handle().getPointer()),
-                        Function.identity()));
+                        rawDevice -> new HANDLE(rawDevice.hDevice.getPointer()),
+                        rawDevice -> {
+                            String hwid;
+                            try {
+                                hwid = getDeviceHwid(rawDevice.hDevice);
+                            } catch (RawInputException ex) {
+                                // TODO: proper logging
+                                ex.printStackTrace();
+                                hwid = "";
+                            }
+
+                            String name;
+                            try {
+                                name = getDeviceNameByHwid(hwid);
+                            } catch (IllegalArgumentException ex) {
+                                // TODO: proper logging
+                                ex.printStackTrace();
+                                name = hwid;
+                            }
+
+                            return new RawInputDevice(hwid, name, rawDevice.dwType);
+                        }));
     }
 
     private static String getDeviceHwid(HANDLE rawDevice) throws RawInputException {
         final IntByReference hwidSize = new IntByReference();
-        if(USER32.GetRawInputDeviceInfo(rawDevice, User32.RIDI_DEVICENAME, null, hwidSize) < 0)
+        if(RAW_INPUT.GetRawInputDeviceInfo(rawDevice, RawInput.RIDI_DEVICENAME, null, hwidSize) < 0)
             throw new RawInputException();
 
         if (hwidSize.getValue() == 0)
@@ -241,7 +233,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         final var hwidPtr = new Memory((hwidSize.getValue() + 1L) * Native.WCHAR_SIZE);
         hwidPtr.clear();
 
-        if(USER32.GetRawInputDeviceInfo(rawDevice, User32.RIDI_DEVICENAME, new LPVOID(hwidPtr), hwidSize) < 0)
+        if(RAW_INPUT.GetRawInputDeviceInfo(rawDevice, RawInput.RIDI_DEVICENAME, new LPVOID(hwidPtr), hwidSize) < 0)
             throw new RawInputException();
 
         if (W32APITypeMapper.DEFAULT == W32APITypeMapper.UNICODE) {

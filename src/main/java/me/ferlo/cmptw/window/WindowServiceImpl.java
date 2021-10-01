@@ -1,19 +1,22 @@
 package me.ferlo.cmptw.window;
 
 import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.User32;
 import me.ferlo.cmptw.raw.RawInputException;
-import me.ferlo.cmptw.raw.User32;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static com.sun.jna.platform.win32.User32.HWND_MESSAGE;
-import static me.ferlo.cmptw.raw.User32.*;
+import static com.sun.jna.platform.win32.User32.*;
 
 class WindowServiceImpl implements WindowService {
 
     private static final User32 USER32 = User32.INSTANCE;
+
+    private static final int PM_NOREMOVE = 0x0000;
+    private static final int PM_REMOVE = 0x0001;
+    private static final int PM_NOYIELD = 0x0002;
 
     private final ExecutorService pumpExecutor = Executors.newSingleThreadExecutor(r -> {
         final var th = Executors.defaultThreadFactory().newThread(r);
@@ -166,7 +169,7 @@ class WindowServiceImpl implements WindowService {
         if(!registered || msg == null)
             return;
 
-        while (USER32.PeekMessage(msg, hWnd, WM_INPUT, WM_INPUT, PM_NOREMOVE)) {
+        while (USER32.PeekMessage(msg, hWnd, wMsgFilterMin, wMsgFilterMax, PM_NOREMOVE)) {
             USER32.TranslateMessage(msg);
             USER32.DispatchMessage(msg);
         }

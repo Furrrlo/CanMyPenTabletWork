@@ -5,16 +5,17 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Structure.FieldOrder;
 import com.sun.jna.Union;
-import com.sun.jna.platform.win32.NTSecApi;
+import com.sun.jna.platform.win32.WinNT;
+import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.ptr.IntByReference;
-
-import java.awt.*;
+import com.sun.jna.win32.StdCallLibrary;
 
 import static com.sun.jna.win32.W32APIOptions.DEFAULT_OPTIONS;
 
-public interface User32 extends com.sun.jna.platform.win32.User32 {
+@SuppressWarnings("unused")
+interface RawInput extends StdCallLibrary, WinUser, WinNT {
 
-    User32 INSTANCE = Native.load("user32", User32.class, DEFAULT_OPTIONS);
+    RawInput INSTANCE = Native.load("user32", RawInput.class, DEFAULT_OPTIONS);
 
     int RID_HEADER = 0x10000005;
     int RID_INPUT = 0x10000003;
@@ -69,9 +70,36 @@ public interface User32 extends com.sun.jna.platform.win32.User32 {
     int RI_KEY_E0 = 2;
     int RI_KEY_E1 = 4;
 
-    int PM_NOREMOVE = 0x0000;
-    int PM_REMOVE = 0x0001;
-    int PM_NOYIELD = 0x0002;
+    /** The device is a mouse. */
+    int RIM_TYPEMOUSE = WinUser.RIM_TYPEMOUSE;
+    /** The device is a keyboard. */
+    int RIM_TYPEKEYBOARD = WinUser.RIM_TYPEKEYBOARD;
+    /** The device is an HID that is not a keyboard and not a mouse. **/
+    int RIM_TYPEHID = WinUser.RIM_TYPEHID;
+
+    /**
+     * @param pRawInputDeviceList
+     *            An array of {@link WinUser.RAWINPUTDEVICELIST} structures for the devices
+     *            attached to the system. If (@code null}, the number of devices is
+     *            returned in <tt>puiNumDevices</tt>
+     * @param puiNumDevices
+     *            If <tt>pRawInputDeviceList</tt> is {@code null}, the function populates
+     *            this variable with the number of devices attached to the system;
+     *            otherwise, this variable specifies the number of {@link WinUser.RAWINPUTDEVICELIST}
+     *            structures that can be contained in the buffer to which <tt>pRawInputDeviceList</tt>
+     *            points. If this value is less than the number of devices attached to
+     *            the system, the function returns the actual number of devices in this
+     *            variable and fails with ERROR_INSUFFICIENT_BUFFER.
+     * @param cbSize
+     *            The size of a {@link WinUser.RAWINPUTDEVICELIST} structure, in bytes.
+     * @return If the function is successful, the return value is the number of devices
+     *             stored in the buffer pointed to by <tt>pRawInputDeviceList</tt>. On
+     *             any other error, the function returns -1 and {@code GetLastError}
+     *             returns the error indication.
+     * @see WinUser.RAWINPUTDEVICELIST#sizeof()
+     * @see <A HREF="https://msdn.microsoft.com/en-us/library/windows/desktop/ms645598(v=vs.85).aspx">GetRawInputDeviceList</A>
+     */
+    int GetRawInputDeviceList(RAWINPUTDEVICELIST[] pRawInputDeviceList, IntByReference puiNumDevices, int cbSize);
 
     /**
      * Defines information for the raw input devices.
