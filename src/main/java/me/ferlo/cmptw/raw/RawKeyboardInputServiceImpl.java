@@ -10,6 +10,8 @@ import com.sun.jna.platform.win32.WinUser.RAWINPUTDEVICELIST;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APITypeMapper;
 import me.ferlo.cmptw.window.WindowService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +23,7 @@ import static me.ferlo.cmptw.raw.RawInput.*;
 
 class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RawKeyboardInputServiceImpl.class);
     private static final RawInput RAW_INPUT = RawInput.INSTANCE;
 
     private final WindowService windowService;
@@ -116,20 +119,13 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     }
 
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wParam, LPARAM lParam) {
-        try {
-            if (uMsg == WM_USB_DEVICECHANGE) {
-                getCurrentDeviceList().forEach(devices::putIfAbsent);
-                return new LRESULT(0);
-            }
-
-            if (uMsg == WM_INPUT)
-                return handleRawInput(lParam.toPointer());
-
-        } catch (Throwable t) {
-            // TODO: better logging
-            System.err.println("Uncaught exception in wndProc function:");
-            t.printStackTrace();
+        if (uMsg == WM_USB_DEVICECHANGE) {
+            getCurrentDeviceList().forEach(devices::putIfAbsent);
+            return new LRESULT(0);
         }
+
+        if (uMsg == WM_INPUT)
+            return handleRawInput(lParam.toPointer());
 
         throw new AssertionError("Unsupported message type " + uMsg);
     }
@@ -203,18 +199,17 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
                             String hwid;
                             try {
                                 hwid = getDeviceHwid(rawDevice.hDevice);
+                                if(hwid == null) hwid = "";
                             } catch (RawInputException ex) {
-                                // TODO: proper logging
-                                ex.printStackTrace();
+                                LOGGER.error("Failed to get device HWID for handle {}", rawDevice.hDevice, ex);
                                 hwid = "";
                             }
 
                             String name;
                             try {
-                                name = getDeviceNameByHwid(hwid);
+                                name = hwid.isEmpty() ? "" : getDeviceNameByHwid(hwid);
                             } catch (IllegalArgumentException ex) {
-                                // TODO: proper logging
-                                ex.printStackTrace();
+                                LOGGER.error("Failed to get device name for HWID {}", hwid, ex);
                                 name = hwid;
                             }
 

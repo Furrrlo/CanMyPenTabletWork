@@ -9,6 +9,8 @@ import com.sun.jna.platform.win32.WinDef.HKL;
 import com.sun.jna.platform.win32.WinDef.LCID;
 import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.win32.W32APITypeMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
@@ -19,6 +21,8 @@ import static com.sun.jna.platform.win32.WinUser.MAPVK_VK_TO_VSC;
 import static com.sun.jna.win32.W32APIOptions.DEFAULT_OPTIONS;
 
 public class WinToAwtHelper implements WinVK {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WinToAwtHelper.class);
 
     private WinToAwtHelper() {
     }
@@ -375,14 +379,12 @@ public class WinToAwtHelper implements WinVK {
             }
             // cannot convert to ANSI char
             if (nchars == 0) {
-                // TODO: logging
-                System.err.printf("VK 0x%02X -> cannot convert to ANSI char\n", windowsKey);
+                LOGGER.atError().log(() -> String.format("VK 0x%02X -> cannot convert to ANSI char", windowsKey));
                 return;
             }
             // can't happen, see reset code below
             if (nchars > 1) {
-                // TODO: logging
-                System.err.printf("VK 0x%02X -> converted to <0x%02X,0x%02X>\n", windowsKey, cbuf[0], cbuf[1]);
+                LOGGER.atError().log(() -> String.format("VK 0x%02X -> converted to <0x%02X,0x%02X>", windowsKey, cbuf[0], cbuf[1]));
                 return;
             }
 
@@ -390,9 +392,10 @@ public class WinToAwtHelper implements WinVK {
             int codePage = langToCodePage(hkl.getLanguageIdentifier());
             int nConverted = Kernel32.INSTANCE.MultiByteToWideChar(codePage, 0, cbuf, 1, str, 2);
             if (nConverted < 0 || str.getValue().length() <= 0) {
-                // TODO: logging
-                System.err.printf("VK 0x%02X -> ANSI 0x%02X -> MultiByteToWideChar failed\n", windowsKey, cbuf[0]);
-                new Win32Exception(Kernel32.INSTANCE.GetLastError()).printStackTrace();
+                if(LOGGER.isErrorEnabled())
+                    LOGGER.error(
+                            String.format("VK 0x%02X -> ANSI 0x%02X -> MultiByteToWideChar failed\n", windowsKey, cbuf[0]),
+                            new Win32Exception(Kernel32.INSTANCE.GetLastError()));
                 return;
             }
 

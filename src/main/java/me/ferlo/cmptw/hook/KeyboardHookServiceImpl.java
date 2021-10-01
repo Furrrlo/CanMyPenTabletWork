@@ -7,6 +7,8 @@ import me.ferlo.cmptw.global.GlobalKeyboardHookService;
 import me.ferlo.cmptw.raw.RawInputKeyListener;
 import me.ferlo.cmptw.raw.RawKeyEvent;
 import me.ferlo.cmptw.raw.RawKeyboardInputService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -16,6 +18,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class KeyboardHookServiceImpl implements KeyboardHookService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(KeyboardHookServiceImpl.class);
 
     private final Object lock = new Object();
     private volatile boolean registered;
@@ -93,9 +97,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         try {
             return globalKeyEvent0(globalEvent);
         } catch (Throwable ex) {
-            // TODO: logging
-            System.err.println("Uncaught exception in JNativeHook listener: ");
-            ex.printStackTrace();
+            LOGGER.error("Uncaught exception in GlobalHook listener", ex);
             return false;
         }
     }
@@ -117,9 +119,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         try {
             rawEvent = future.get(1, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException ex) {
-            // TODO: logging
-            System.err.println("Failed to wait for future");
-            ex.printStackTrace();
+            LOGGER.error("Failed to wait for future", ex);
             rawEvent = null;
         } catch (TimeoutException e) {
             rawEvent = null;
@@ -160,9 +160,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         try {
             rawKeyEvent0(rawEvent);
         } catch (Throwable ex) {
-            // TODO: logging
-            System.err.println("Uncaught exception in RawInput listener: ");
-            ex.printStackTrace();
+            LOGGER.error("Uncaught exception in RawInput listener");
         }
     }
 

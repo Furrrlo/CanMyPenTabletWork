@@ -3,6 +3,8 @@ package me.ferlo.cmptw.window;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.User32;
 import me.ferlo.cmptw.raw.RawInputException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +13,8 @@ import java.util.concurrent.*;
 import static com.sun.jna.platform.win32.User32.*;
 
 class WindowServiceImpl implements WindowService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WindowServiceImpl.class);
 
     private static final User32 USER32 = User32.INSTANCE;
 
@@ -22,11 +26,7 @@ class WindowServiceImpl implements WindowService {
         final var th = Executors.defaultThreadFactory().newThread(r);
         th.setName("RawKeyboardInputServiceImpl-message-pump");
         th.setDaemon(true);
-        th.setUncaughtExceptionHandler((t, e) -> {
-            // TODO: better logging
-            System.err.println("Thread '" + t.getName() + "' crashed: ");
-            e.printStackTrace();
-        });
+        th.setUncaughtExceptionHandler((t, e) -> LOGGER.error("Thread '{}' crashed: ", t.getName(), e));
         return th;
     });
     private final Object lock = new Object();
@@ -176,9 +176,14 @@ class WindowServiceImpl implements WindowService {
     }
 
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wParam, LPARAM lParam) {
-        final var listener = listeners.get(uMsg);
-        if(listener != null)
-            return listener.wndProc(hwnd, uMsg, wParam, lParam);
+        try {
+            final var listener = listeners.get(uMsg);
+            if(listener != null)
+                return listener.wndProc(hwnd, uMsg, wParam, lParam);
+        } catch (Throwable t) {
+            LOGGER.error("Uncaught exception in wndProc function", t);
+        }
+
         return USER32.DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
