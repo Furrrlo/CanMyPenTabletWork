@@ -1,5 +1,6 @@
 package me.ferlo.cmptw.hook;
 
+import com.sun.jna.platform.win32.User32;
 import me.ferlo.cmptw.global.GlobalKeyEvent;
 import me.ferlo.cmptw.global.GlobalKeyboardHookListener;
 import me.ferlo.cmptw.global.GlobalKeyboardHookService;
@@ -28,6 +29,8 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
     private final Queue<SavedRawEvent> rawEventQueue = new ConcurrentLinkedQueue<>();
     private final Queue<SavedNativeEvent> nativeEventQueue = new ConcurrentLinkedQueue<>();
 
+    private int currentModifiers = 0x0;
+
     @Override
     public void register() throws Exception {
         if(!registered)
@@ -40,6 +43,24 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
                     GlobalKeyboardHookService.INSTANCE.register();
                     GlobalKeyboardHookService.INSTANCE.addListener(globalKeyListener);
+
+                    // Init modifiers
+                    final var keyboardState = new byte[WinVK.KB_STATE_SIZE];
+                    User32.INSTANCE.GetKeyboardState(keyboardState);
+                    // Check the high order bit
+                    if ((keyboardState[WinVK.VK_LSHIFT]   & 0x80) != 0) currentModifiers |= KeyboardHookEvent.LSHIFT_MASK;
+                    if ((keyboardState[WinVK.VK_RSHIFT]   & 0x80) != 0) currentModifiers |= KeyboardHookEvent.RSHIFT_MASK;
+                    if ((keyboardState[WinVK.VK_LCONTROL] & 0x80) != 0) currentModifiers |= KeyboardHookEvent.LCTRL_MASK;
+                    if ((keyboardState[WinVK.VK_RCONTROL] & 0x80) != 0) currentModifiers |= KeyboardHookEvent.RCTRL_MASK;
+                    if ((keyboardState[WinVK.VK_LMENU]    & 0x80) != 0) currentModifiers |= KeyboardHookEvent.LALT_MASK;
+                    if ((keyboardState[WinVK.VK_RMENU]    & 0x80) != 0) currentModifiers |= KeyboardHookEvent.RALT_MASK;
+                    if ((keyboardState[WinVK.VK_LWIN]     & 0x80) != 0) currentModifiers |= KeyboardHookEvent.LMETA_MASK;
+                    if ((keyboardState[WinVK.VK_RWIN]     & 0x80) != 0) currentModifiers |= KeyboardHookEvent.RMETA_MASK;
+
+                    // For toggle keys, check the low order bit
+                    if ((keyboardState[WinVK.VK_CAPITAL] & 0x01) != 0) currentModifiers |= KeyboardHookEvent.CAPS_LOCK_MASK;
+                    if ((keyboardState[WinVK.VK_NUMLOCK] & 0x01) != 0) currentModifiers |= KeyboardHookEvent.NUM_LOCK_MASK;
+                    if ((keyboardState[WinVK.VK_SCROLL] & 0x01) != 0) currentModifiers |= KeyboardHookEvent.SCROLL_LOCK_MASK;
                 }
             }
     }
@@ -173,7 +194,56 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
     }
 
     private boolean dispatchEvent(RawKeyEvent rawEvent, GlobalKeyEvent globalEvent) {
-        final KeyboardHookEvent evt = new KeyboardHookEvent(rawEvent, globalEvent);
+        final int vKey = WinToAwtHelper.getLocatedVKey(globalEvent.vKeyCode(), globalEvent.scanCode(), globalEvent.isExtendedKey());
+        final int modifier = switch (vKey) {
+            case WinVK.VK_SHIFT, WinVK.VK_LSHIFT -> KeyboardHookEvent.LSHIFT_MASK;
+            case WinVK.VK_RSHIFT -> KeyboardHookEvent.RSHIFT_MASK;
+            case WinVK.VK_CONTROL, WinVK.VK_LCONTROL -> KeyboardHookEvent.LCTRL_MASK;
+            case WinVK.VK_RCONTROL -> KeyboardHookEvent.RCTRL_MASK;
+            case WinVK.VK_MENU, WinVK.VK_LMENU -> KeyboardHookEvent.LALT_MASK;
+            case WinVK.VK_RMENU -> KeyboardHookEvent.RALT_MASK;
+            case WinVK.VK_LWIN -> KeyboardHookEvent.LMETA_MASK;
+            case WinVK.VK_RWIN -> KeyboardHookEvent.RMETA_MASK;
+            case WinVK.VK_NUMLOCK -> KeyboardHookEvent.NUM_LOCK_MASK;
+            case WinVK.VK_CAPITAL -> KeyboardHookEvent.CAPS_LOCK_MASK;
+            case WinVK.VK_SCROLL -> KeyboardHookEvent.SCROLL_LOCK_MASK;
+            default -> 0;
+        };
+
+        if(modifier != 0) {
+            final boolean isLockModifier = switch (vKey) {
+                case WinVK.VK_NUMLOCK, WinVK.VK_CAPITAL, WinVK.VK_SCROLL -> true;
+                default -> false;
+            };
+
+            if(!isLockModifier) {
+                if(rawEvent.keyState() == RawKeyEvent.State.DOWN)
+                    currentModifiers |= modifier;
+                else
+                    currentModifiers &= ~modifier;
+            } else {
+                if(rawEvent.keyState() == RawKeyEvent.State.DOWN)
+                    currentModifiers ^= modifier;
+            }
+        }
+
+        // If alt is not in the modifiers, but the global event says it should, force it to be there
+        final int modifiers = (globalEvent.isAltPressed() && (currentModifiers & KeyboardHookEvent.ALT_MASK) == 0) ?
+                currentModifiers | KeyboardHookEvent.LALT_MASK :
+                currentModifiers;
+
+        final KeyboardHookEvent evt = new KeyboardHookEvent(
+                rawEvent.device(),
+                vKey,
+                globalEvent.scanCode(),
+                globalEvent.isExtendedKey(),
+                modifiers,
+                WinToAwtHelper.winVKeyToAwtKey(globalEvent.vKeyCode(), modifiers),
+                WinToAwtHelper.getAwtKeyLocation(globalEvent.vKeyCode(), globalEvent.scanCode(), globalEvent.isExtendedKey()),
+                globalEvent.wasKeyDown(),
+                globalEvent.isKeyDown(),
+                globalEvent.repeatCount()
+        );
         return listeners.stream().sequential().anyMatch(l -> l.onKeyHook(evt));
     }
 
