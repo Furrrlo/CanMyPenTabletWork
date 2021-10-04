@@ -108,17 +108,6 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         listeners.remove(listener);
     }
 
-    @Override
-    public List<RawKeyEvent> peek() {
-        try {
-            polledEvents = new ArrayList<>();
-            windowService.peekMessages(WM_INPUT, WM_INPUT);
-            return polledEvents;
-        } finally {
-            polledEvents = null;
-        }
-    }
-
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wParam, LPARAM lParam) {
         if (uMsg == WM_USB_DEVICECHANGE)
             return handleDeviceChange();
@@ -174,8 +163,17 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         // If we are polling the events, don't fire to the event listeners
         if(polledEvents != null)
             polledEvents.add(evt);
-        else
-            listeners.forEach(l -> l.onRawKeyEvent(evt));
+        else {
+            listeners.forEach(l -> l.onRawKeyEvent(evt, () -> {
+                try {
+                    polledEvents = new ArrayList<>();
+                    windowService.peekMessages(WM_INPUT, WM_INPUT);
+                    return polledEvents;
+                } finally {
+                    polledEvents = null;
+                }
+            }));
+        }
 
         return new LRESULT(0);
     }

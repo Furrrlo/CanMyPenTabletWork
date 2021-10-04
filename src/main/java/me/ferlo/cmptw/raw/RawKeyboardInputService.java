@@ -3,7 +3,6 @@ package me.ferlo.cmptw.raw;
 import me.ferlo.cmptw.window.WindowService;
 
 import java.util.Collection;
-import java.util.List;
 
 public interface RawKeyboardInputService {
 
@@ -18,6 +17,4 @@ public interface RawKeyboardInputService {
     void removeListener(RawInputKeyListener listener);
 
     Collection<RawInputDevice> getDevices();
-
-    List<RawKeyEvent> peek();
 }

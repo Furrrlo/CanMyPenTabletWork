@@ -25,7 +25,19 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
 
     private final Collection<KeyboardHookListener> listeners = ConcurrentHashMap.newKeySet();
     private final GlobalKeyboardHookListener globalKeyListener = this::globalKeyEvent;
-    private final RawInputKeyListener rawKeyListener = this::rawKeyEvent;
+    private final RawInputKeyListener rawKeyListener = new RawInputKeyListener() {
+        @Override
+        public void onRawKeyEvent(RawKeyEvent rawEvent, Supplier<List<RawKeyEvent>> peek) {
+            rawKeyEvent(rawEvent, peek);
+        }
+
+        @Override
+        public void onDevicesChange(Collection<RawInputDevice> currentDevices,
+                                    Collection<RawInputDevice> added,
+                                    Collection<RawInputDevice> removed) {
+            KeyboardHookServiceImpl.this.onDevicesChange(currentDevices, added, removed);
+        }
+    };
 
     private final Queue<SavedRawEvent> rawEventQueue = new ConcurrentLinkedQueue<>();
     private final Queue<SavedNativeEvent> nativeEventQueue = new ConcurrentLinkedQueue<>();
@@ -177,15 +189,15 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         return Optional.empty();
     }
 
-    private void rawKeyEvent(RawKeyEvent rawEvent) {
+    private void rawKeyEvent(RawKeyEvent rawEvent, Supplier<List<RawKeyEvent>> peek) {
         try {
-            rawKeyEvent0(rawEvent);
+            rawKeyEvent0(rawEvent, peek);
         } catch (Throwable ex) {
             LOGGER.error("Uncaught exception in RawInput listener");
         }
     }
 
-    private void rawKeyEvent0(RawKeyEvent rawEvent) {
+    private void rawKeyEvent0(RawKeyEvent rawEvent, Supplier<List<RawKeyEvent>> peek) {
         final long timestamp = System.currentTimeMillis();
         final var iter = nativeEventQueue.iterator();
 
@@ -201,7 +213,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
             final boolean globalEventPressed = globalEvent.isKeyDown();
             final var maybeRawEvent = Stream.<Supplier<Stream<RawKeyEvent>>>of(
                             () -> Stream.of(rawEvent),
-                            () -> RawKeyboardInputService.INSTANCE.peek().stream())
+                            () -> peek.get().stream())
                     .flatMap(Supplier::get)
                     .filter(rawEvent0 -> {
                         final boolean rawEventPressed = rawEvent0.keyState() == RawKeyEvent.State.DOWN;

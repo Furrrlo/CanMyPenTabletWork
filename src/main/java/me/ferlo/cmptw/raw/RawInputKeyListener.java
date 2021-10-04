@@ -1,10 +1,12 @@
 package me.ferlo.cmptw.raw;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Supplier;
 
 public interface RawInputKeyListener {
 
-    void onRawKeyEvent(RawKeyEvent rawEvent);
+    void onRawKeyEvent(RawKeyEvent rawEvent, Supplier<List<RawKeyEvent>> peek);
 
     default void onDevicesChange(Collection<RawInputDevice> currentDevices,
                                  Collection<RawInputDevice> added,
