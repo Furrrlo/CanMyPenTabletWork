@@ -32,6 +32,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
 
     private final Collection<RawInputKeyListener> listeners = ConcurrentHashMap.newKeySet();
     private final ConcurrentMap<HANDLE, RawInputDevice> devices = new ConcurrentHashMap<>();
+    private final Collection<RawInputDevice> unmodifiableDevices = Collections.unmodifiableCollection(devices.values());
 
     private RAWINPUT cachedRawInputObj;
     private Memory cachedRawInputMemory;
@@ -119,10 +120,8 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     }
 
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wParam, LPARAM lParam) {
-        if (uMsg == WM_USB_DEVICECHANGE) {
-            getCurrentDeviceList().forEach(devices::putIfAbsent);
-            return new LRESULT(0);
-        }
+        if (uMsg == WM_USB_DEVICECHANGE)
+            return handleDeviceChange();
 
         if (uMsg == WM_INPUT)
             return handleRawInput(lParam.toPointer());
@@ -178,6 +177,38 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         else
             listeners.forEach(l -> l.onRawKeyEvent(evt));
 
+        return new LRESULT(0);
+    }
+
+    @Override
+    public Collection<RawInputDevice> getDevices() {
+        return unmodifiableDevices;
+    }
+
+    private LRESULT handleDeviceChange() {
+        final Map<HANDLE, RawInputDevice> prevDevices = new HashMap<>(getCurrentDeviceList());
+        final Map<HANDLE, RawInputDevice> newDevices = getCurrentDeviceList();
+
+        final Set<RawInputDevice> added = new HashSet<>();
+        final Set<RawInputDevice> removed = new HashSet<>();
+
+        newDevices.forEach((handle, device) -> {
+            final boolean wasAdded = devices.putIfAbsent(handle, device) == null;
+            if(wasAdded)
+                added.add(device);
+        });
+        prevDevices.forEach((handle, device) -> {
+            if(newDevices.containsKey(handle))
+                return;
+
+            devices.remove(handle);
+            removed.add(device);
+        });
+
+        listeners.forEach(l -> l.onDevicesChange(
+                unmodifiableDevices,
+                Collections.unmodifiableSet(added),
+                Collections.unmodifiableSet(removed)));
         return new LRESULT(0);
     }
 

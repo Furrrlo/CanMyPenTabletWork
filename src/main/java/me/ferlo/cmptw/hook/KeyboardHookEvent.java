@@ -1,7 +1,5 @@
 package me.ferlo.cmptw.hook;
 
-import me.ferlo.cmptw.raw.RawInputDevice;
-
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
@@ -52,7 +50,7 @@ import java.awt.event.KeyEvent;
  *                       {@code KEY_LOCATION_RIGHT}, and {@code KEY_LOCATION_NUMPAD}.
  */
 public record KeyboardHookEvent(
-        RawInputDevice rawInputDevice,
+        KeyboardHookDevice device,
         int vKeyCode,
         int scanCode,
         boolean isExtendedKey,
@@ -190,7 +188,7 @@ public record KeyboardHookEvent(
         if (isKeyDown && wasKeyDown) str.append(",repeated");
         str.append(",repeatCount=").append(repeatCount);
 
-        str.append(",device").append(rawInputDevice.hwid());
+        str.append(",device").append(device.getId());
 
         str.append(",awtKeyCode=").append(awtKeyCode);
         str.append(",awtKeyText=").append(KeyEvent.getKeyText(awtKeyCode));

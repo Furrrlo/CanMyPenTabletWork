@@ -17,7 +17,7 @@ public class CanMyPenTabletWork {
                 return false;
 
             final StringBuilder sb = new StringBuilder();
-            sb.append(event.rawInputDevice().hwid());
+            sb.append(event.device().getId());
             sb.append(": ");
             if(event.modifiers() != 0)
                 sb.append(event.getModifiersText(" + ")).append(" + ");
