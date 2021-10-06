@@ -4,7 +4,9 @@ import me.ferlo.cmptw.window.WindowService;
 
 public interface GlobalKeyboardHookService {
 
-    GlobalKeyboardHookService INSTANCE = new GlobalKeyboardHookServiceImpl(WindowService.INSTANCE);
+    static GlobalKeyboardHookService create(WindowService windowService) {
+        return new GlobalKeyboardHookServiceImpl(windowService);
+    }
 
     void register() throws Exception;
 

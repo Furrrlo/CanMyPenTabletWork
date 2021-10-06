@@ -1,7 +1,4 @@
-import me.ferlo.cmptw.gui.CanMyPenTabletWorkFrame;
 import me.ferlo.cmptw.hook.KeyboardHookService;
-import me.ferlo.cmptw.hook.KeyboardHookServiceImpl;
-import me.ferlo.cmptw.window.WindowService;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.awt.event.KeyEvent;
@@ -12,7 +9,7 @@ public class CanMyPenTabletWork {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
-        final KeyboardHookService service = new KeyboardHookServiceImpl();
+        final KeyboardHookService service = KeyboardHookService.create();
         service.addListener(event -> {
             if(!event.isKeyDown())
                 return false;
@@ -26,8 +23,6 @@ public class CanMyPenTabletWork {
             System.out.println(sb);
             return true;
         });
-
-        WindowService.INSTANCE.register();
         service.register();
 
         System.out.println("Started");

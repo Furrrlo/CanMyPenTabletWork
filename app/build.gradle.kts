@@ -10,7 +10,7 @@ application {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":core-windows"))
+    runtimeOnly(project(":core-windows"))
 
     // Logging dependencies
     val slf4j = project.ext["slf4jVersion"] as String

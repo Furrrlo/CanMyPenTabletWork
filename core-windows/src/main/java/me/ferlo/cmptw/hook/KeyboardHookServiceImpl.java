@@ -8,6 +8,7 @@ import me.ferlo.cmptw.raw.RawInputDevice;
 import me.ferlo.cmptw.raw.RawInputKeyListener;
 import me.ferlo.cmptw.raw.RawKeyEvent;
 import me.ferlo.cmptw.raw.RawKeyboardInputService;
+import me.ferlo.cmptw.window.WindowService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,11 @@ import java.util.stream.Stream;
 public class KeyboardHookServiceImpl implements KeyboardHookService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KeyboardHookServiceImpl.class);
+
+    private final boolean isServicesOwner;
+    private final WindowService windowService;
+    private final RawKeyboardInputService rawKeyboardInputService;
+    private final GlobalKeyboardHookService globalKeyboardHookService;
 
     private final Object lock = new Object();
     private volatile boolean registered;
@@ -45,6 +51,22 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
     private final Map<RawInputDevice, RawKeyboardHookDevice> devices = new ConcurrentHashMap<>();
     private final Collection<KeyboardHookDevice> unmodifiableDevices = Collections.unmodifiableCollection(devices.values());
 
+    public KeyboardHookServiceImpl(WindowService windowService,
+                                   RawKeyboardInputService rawKeyboardInputService,
+                                   GlobalKeyboardHookService globalKeyboardHookService) {
+        this.isServicesOwner = false;
+        this.windowService = windowService;
+        this.rawKeyboardInputService = rawKeyboardInputService;
+        this.globalKeyboardHookService = globalKeyboardHookService;
+    }
+
+    public KeyboardHookServiceImpl() {
+        this.isServicesOwner = true;
+        this.windowService = WindowService.create();
+        this.rawKeyboardInputService = RawKeyboardInputService.create(windowService);
+        this.globalKeyboardHookService = GlobalKeyboardHookService.create(windowService);
+    }
+
     @Override
     public void register() throws Exception {
         if(!registered)
@@ -52,14 +74,17 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                 if(!registered) {
                     registered = true;
 
-                    RawKeyboardInputService.INSTANCE.register();
-                    RawKeyboardInputService.INSTANCE.addListener(rawKeyListener);
+                    rawKeyboardInputService.addListener(rawKeyListener);
+                    globalKeyboardHookService.addListener(globalKeyListener);
 
-                    GlobalKeyboardHookService.INSTANCE.register();
-                    GlobalKeyboardHookService.INSTANCE.addListener(globalKeyListener);
+                    if(isServicesOwner) {
+                        windowService.register();
+                        rawKeyboardInputService.register();
+                        globalKeyboardHookService.register();
+                    }
 
                     // Init devices
-                    RawKeyboardInputService.INSTANCE.getDevices().forEach(device -> devices.put(device, new RawKeyboardHookDevice(device)));
+                    rawKeyboardInputService.getDevices().forEach(device -> devices.put(device, new RawKeyboardHookDevice(device)));
 
                     // Init modifiers
                     devices.forEach((rawDevice, device) -> {
@@ -95,11 +120,14 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                 if (registered) {
                     registered = false;
 
-                    GlobalKeyboardHookService.INSTANCE.removeListener(globalKeyListener);
-                    GlobalKeyboardHookService.INSTANCE.unregister();
+                    globalKeyboardHookService.removeListener(globalKeyListener);
+                    rawKeyboardInputService.removeListener(rawKeyListener);
 
-                    RawKeyboardInputService.INSTANCE.removeListener(rawKeyListener);
-                    RawKeyboardInputService.INSTANCE.unregister();
+                    if(isServicesOwner) {
+                        windowService.unregister();
+                        rawKeyboardInputService.unregister();
+                        globalKeyboardHookService.unregister();
+                    }
                 }
             }
     }

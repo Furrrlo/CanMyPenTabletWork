@@ -5,7 +5,9 @@ import me.ferlo.cmptw.raw.RawInputException;
 
 public interface WindowService {
 
-    WindowService INSTANCE = new WindowServiceImpl();
+    static WindowService create() {
+        return new WindowServiceImpl();
+    }
 
     void register() throws RawInputException;
 

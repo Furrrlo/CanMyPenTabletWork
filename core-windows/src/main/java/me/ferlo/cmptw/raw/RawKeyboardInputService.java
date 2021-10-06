@@ -6,7 +6,9 @@ import java.util.Collection;
 
 public interface RawKeyboardInputService {
 
-    RawKeyboardInputService INSTANCE = new RawKeyboardInputServiceImpl(WindowService.INSTANCE);
+    static RawKeyboardInputService create(WindowService windowService) {
+        return new RawKeyboardInputServiceImpl(windowService);
+    }
 
     void register() throws RawInputException;
 
