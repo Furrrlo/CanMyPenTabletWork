@@ -1,3 +1,4 @@
+import me.ferlo.cmptw.gui.CanMyPenTabletWorkFrame;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import me.ferlo.cmptw.hook.KeyboardHookServiceImpl;
 import me.ferlo.cmptw.window.WindowService;
