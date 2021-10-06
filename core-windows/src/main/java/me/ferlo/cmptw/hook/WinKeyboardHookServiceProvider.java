@@ -2,8 +2,6 @@ package me.ferlo.cmptw.hook;
 
 import com.google.auto.service.AutoService;
 
-import java.util.Locale;
-
 @AutoService(KeyboardHookServiceProvider.class)
 public class WinKeyboardHookServiceProvider implements KeyboardHookServiceProvider {
 
@@ -14,6 +12,6 @@ public class WinKeyboardHookServiceProvider implements KeyboardHookServiceProvid
 
     @Override
     public KeyboardHookService create() {
-        return new KeyboardHookServiceImpl();
+        return new WinKeyboardHookService();
     }
 }

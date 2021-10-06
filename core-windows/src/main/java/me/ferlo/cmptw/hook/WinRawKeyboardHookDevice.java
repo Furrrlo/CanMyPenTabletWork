@@ -2,12 +2,12 @@ package me.ferlo.cmptw.hook;
 
 import me.ferlo.cmptw.raw.RawInputDevice;
 
-class RawKeyboardHookDevice implements KeyboardHookDevice {
+class WinRawKeyboardHookDevice implements KeyboardHookDevice {
 
     private final RawInputDevice rawDevice;
     private int modifiers;
 
-    public RawKeyboardHookDevice(RawInputDevice rawDevice) {
+    public WinRawKeyboardHookDevice(RawInputDevice rawDevice) {
         this.rawDevice = rawDevice;
     }
 

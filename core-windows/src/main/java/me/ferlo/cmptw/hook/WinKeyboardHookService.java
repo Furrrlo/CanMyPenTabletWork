@@ -17,9 +17,9 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class KeyboardHookServiceImpl implements KeyboardHookService {
+public class WinKeyboardHookService implements KeyboardHookService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(KeyboardHookServiceImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WinKeyboardHookService.class);
 
     private final boolean isServicesOwner;
     private final WindowService windowService;
@@ -41,26 +41,26 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
         public void onDevicesChange(Collection<RawInputDevice> currentDevices,
                                     Collection<RawInputDevice> added,
                                     Collection<RawInputDevice> removed) {
-            KeyboardHookServiceImpl.this.onDevicesChange(currentDevices, added, removed);
+            WinKeyboardHookService.this.onDevicesChange(currentDevices, added, removed);
         }
     };
 
     private final Queue<SavedRawEvent> rawEventQueue = new ConcurrentLinkedQueue<>();
     private final Queue<SavedNativeEvent> nativeEventQueue = new ConcurrentLinkedQueue<>();
 
-    private final Map<RawInputDevice, RawKeyboardHookDevice> devices = new ConcurrentHashMap<>();
+    private final Map<RawInputDevice, WinRawKeyboardHookDevice> devices = new ConcurrentHashMap<>();
     private final Collection<KeyboardHookDevice> unmodifiableDevices = Collections.unmodifiableCollection(devices.values());
 
-    public KeyboardHookServiceImpl(WindowService windowService,
-                                   RawKeyboardInputService rawKeyboardInputService,
-                                   GlobalKeyboardHookService globalKeyboardHookService) {
+    public WinKeyboardHookService(WindowService windowService,
+                                  RawKeyboardInputService rawKeyboardInputService,
+                                  GlobalKeyboardHookService globalKeyboardHookService) {
         this.isServicesOwner = false;
         this.windowService = windowService;
         this.rawKeyboardInputService = rawKeyboardInputService;
         this.globalKeyboardHookService = globalKeyboardHookService;
     }
 
-    public KeyboardHookServiceImpl() {
+    public WinKeyboardHookService() {
         this.isServicesOwner = true;
         this.windowService = WindowService.create();
         this.rawKeyboardInputService = RawKeyboardInputService.create(windowService);
@@ -84,7 +84,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                     }
 
                     // Init devices
-                    rawKeyboardInputService.getDevices().forEach(device -> devices.put(device, new RawKeyboardHookDevice(device)));
+                    rawKeyboardInputService.getDevices().forEach(device -> devices.put(device, new WinRawKeyboardHookDevice(device)));
 
                     // Init modifiers
                     devices.forEach((rawDevice, device) -> {
@@ -151,7 +151,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
                                  Collection<RawInputDevice> added,
                                  Collection<RawInputDevice> removed) {
         devices.keySet().removeAll(removed);
-        added.forEach(device -> devices.putIfAbsent(device, new RawKeyboardHookDevice(device)));
+        added.forEach(device -> devices.putIfAbsent(device, new WinRawKeyboardHookDevice(device)));
     }
 
     private boolean globalKeyEvent(GlobalKeyEvent globalEvent) {
@@ -259,7 +259,7 @@ public class KeyboardHookServiceImpl implements KeyboardHookService {
     }
 
     private boolean dispatchEvent(RawKeyEvent rawEvent, GlobalKeyEvent globalEvent) {
-        final RawKeyboardHookDevice device = devices.computeIfAbsent(rawEvent.device(), RawKeyboardHookDevice::new);
+        final WinRawKeyboardHookDevice device = devices.computeIfAbsent(rawEvent.device(), WinRawKeyboardHookDevice::new);
 
         final int vKey = WinToAwtHelper.getLocatedVKey(globalEvent.vKeyCode(), globalEvent.scanCode(), globalEvent.isExtendedKey());
         final int modifier = switch (vKey) {
