@@ -50,6 +50,7 @@ public class WinKeyboardHookService implements KeyboardHookService {
 
     private final Map<RawInputDevice, WinRawKeyboardHookDevice> devices = new ConcurrentHashMap<>();
     private final Collection<KeyboardHookDevice> unmodifiableDevices = Collections.unmodifiableCollection(devices.values());
+    private int lockKeysModifiers;
 
     public WinKeyboardHookService(WindowService windowService,
                                   RawKeyboardInputService rawKeyboardInputService,
@@ -101,14 +102,14 @@ public class WinKeyboardHookService implements KeyboardHookService {
                         if ((keyboardState[WinVK.VK_RMENU]    & 0x80) != 0) currentModifiers |= KeyboardHookEvent.RALT_MASK;
                         if ((keyboardState[WinVK.VK_LWIN]     & 0x80) != 0) currentModifiers |= KeyboardHookEvent.LMETA_MASK;
                         if ((keyboardState[WinVK.VK_RWIN]     & 0x80) != 0) currentModifiers |= KeyboardHookEvent.RMETA_MASK;
-
-                        // For toggle keys, check the low order bit
-                        if ((keyboardState[WinVK.VK_CAPITAL] & 0x01) != 0) currentModifiers |= KeyboardHookEvent.CAPS_LOCK_MASK;
-                        if ((keyboardState[WinVK.VK_NUMLOCK] & 0x01) != 0) currentModifiers |= KeyboardHookEvent.NUM_LOCK_MASK;
-                        if ((keyboardState[WinVK.VK_SCROLL] & 0x01) != 0) currentModifiers |= KeyboardHookEvent.SCROLL_LOCK_MASK;
-
                         device.setModifiersMask(currentModifiers);
                     });
+                    final var keyboardState = new byte[WinVK.KB_STATE_SIZE];
+                    User32.INSTANCE.GetKeyboardState(keyboardState);
+                    // For toggle keys, check the low order bit
+                    if ((keyboardState[WinVK.VK_CAPITAL] & 0x01) != 0) lockKeysModifiers |= KeyboardHookEvent.CAPS_LOCK_MASK;
+                    if ((keyboardState[WinVK.VK_NUMLOCK] & 0x01) != 0) lockKeysModifiers |= KeyboardHookEvent.NUM_LOCK_MASK;
+                    if ((keyboardState[WinVK.VK_SCROLL] & 0x01) != 0) lockKeysModifiers |= KeyboardHookEvent.SCROLL_LOCK_MASK;
                 }
             }
     }
@@ -285,23 +286,23 @@ public class WinKeyboardHookService implements KeyboardHookService {
                 default -> false;
             };
 
-            int currentModifiers = device.getModifiersMask();
             if(!isLockModifier) {
+                int currentModifiers = device.getModifiersMask();
                 if(rawEvent.keyState() == RawKeyEvent.State.DOWN)
                     currentModifiers |= modifier;
                 else
                     currentModifiers &= ~modifier;
+                device.setModifiersMask(currentModifiers);
             } else {
                 if(rawEvent.keyState() == RawKeyEvent.State.DOWN)
-                    currentModifiers ^= modifier;
+                    lockKeysModifiers ^= modifier;
             }
-            device.setModifiersMask(currentModifiers);
         }
 
         // If alt is not in the modifiers, but the global event says it should, force it to be there
         final int modifiers = (globalEvent.isAltPressed() && (device.getModifiersMask() & KeyboardHookEvent.ALT_MASK) == 0) ?
-                device.getModifiersMask() | KeyboardHookEvent.LALT_MASK :
-                device.getModifiersMask();
+                device.getModifiersMask() | lockKeysModifiers | KeyboardHookEvent.LALT_MASK :
+                device.getModifiersMask() | lockKeysModifiers;
 
         final KeyboardHookEvent evt = new KeyboardHookEvent(
                 device,
