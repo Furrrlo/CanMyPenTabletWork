@@ -179,7 +179,7 @@ public class WinKeyboardHookService implements KeyboardHookService {
         // Can't return control to the OS, need to busy wait
         RawKeyEvent rawEvent;
         try {
-            rawEvent = future.get(1, TimeUnit.SECONDS);
+            rawEvent = future.get(50, TimeUnit.MILLISECONDS); // TODO: make this configurable
         } catch (InterruptedException | ExecutionException ex) {
             LOGGER.error("Failed to wait for future", ex);
             rawEvent = null;
