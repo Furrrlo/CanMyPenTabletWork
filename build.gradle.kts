@@ -1,5 +1,8 @@
 
 subprojects {
+    if(this == project(":win32-keyboard-hook"))
+        return@subprojects
+
     apply(plugin = "java")
 
     group = "me.ferlo.cmptw"

@@ -11,7 +11,7 @@ import me.ferlo.cmptw.window.WindowService;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static me.ferlo.cmptw.global.NehKbdHook.WH_HOOK;
+import static me.ferlo.cmptw.global.GlobalKeyboardHook.*;
 
 class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
 
@@ -34,7 +34,7 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
             if(registered)
                 return;
 
-            if(!NehKbdHook.INSTANCE.StartHook(windowService.getHwnd()))
+            if(!GlobalKeyboardHook.INSTANCE.StartHook(windowService.getHwnd()))
                 throw new GlobalKeyboardHookException(
                         "Failed to register GlobalKeyboardHookServiceImpl",
                         new Win32Exception(Kernel32.INSTANCE.GetLastError()));
@@ -53,7 +53,7 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
                 return;
 
             windowService.removeListener(WH_HOOK, this::wndProc);
-            if(!NehKbdHook.INSTANCE.StopHook())
+            if(!GlobalKeyboardHook.INSTANCE.StopHook())
                 throw new GlobalKeyboardHookException(
                         "Failed to unregister GlobalKeyboardHookServiceImpl",
                         new Win32Exception(Kernel32.INSTANCE.GetLastError()));

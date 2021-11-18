@@ -4,9 +4,9 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.WinDef.HWND;
 
-public interface NehKbdHook extends Library {
+public interface GlobalKeyboardHook extends Library {
 
-    NehKbdHook INSTANCE = Native.load("NEHKbdhook", NehKbdHook.class);
+    GlobalKeyboardHook INSTANCE = Native.load("global_keyboard_hook", GlobalKeyboardHook.class);
 
     int WH_HOOK = 32769;
 
