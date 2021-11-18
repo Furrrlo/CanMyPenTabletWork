@@ -22,6 +22,8 @@ class WindowServiceImpl implements WindowService {
     private static final int PM_REMOVE = 0x0001;
     private static final int PM_NOYIELD = 0x0002;
 
+    private static final int WM_STOP_EVENT_PUMP = WM_USER + 1;
+
     private final ExecutorService pumpExecutor = Executors.newSingleThreadExecutor(r -> {
         final var th = Executors.defaultThreadFactory().newThread(r);
         th.setName("RawKeyboardInputServiceImpl-message-pump");
@@ -104,25 +106,31 @@ class WindowServiceImpl implements WindowService {
                 return;
 
             registered = false;
-            final List<Throwable> exceptions = new ArrayList<>();
 
-            pumpEventFuture.cancel(true);
-            wndThread = null;
-            msg = null;
+            USER32.PostMessage(hWnd, WM_STOP_EVENT_PUMP, null, null);
+            waitFutureAndPropagateException(pumpExecutor.submit(() -> {
+                final List<Throwable> exceptions = new ArrayList<>();
 
-            if(!USER32.DestroyWindow(hWnd))
-                exceptions.add(new WindowException());
-            hWnd = null;
+                msg = null;
 
-            if(!USER32.UnregisterClass(wndCls.lpszClassName, hInst))
-                exceptions.add(new WindowException());
-            wndCls = null;
+                if(Thread.currentThread() != wndThread)
+                    exceptions.add(new IllegalStateException("Cannot destroy window if not on the window thread"));
+                wndThread = null;
 
-            if(!exceptions.isEmpty()) {
-                final WindowException ex = new WindowException("Failed to unregister WindowServiceImpl");
-                exceptions.forEach(ex::addSuppressed);
-                throw ex;
-            }
+                if(!USER32.DestroyWindow(hWnd))
+                    exceptions.add(new WindowException());
+                hWnd = null;
+
+                if(!USER32.UnregisterClass(wndCls.lpszClassName, hInst))
+                    exceptions.add(new WindowException());
+                wndCls = null;
+
+                if(!exceptions.isEmpty()) {
+                    final WindowException ex = new WindowException("Failed to unregister WindowServiceImpl");
+                    exceptions.forEach(ex::addSuppressed);
+                    throw ex;
+                }
+            }), "Failed to wait for shutdown");
         }
     }
 
@@ -177,6 +185,11 @@ class WindowServiceImpl implements WindowService {
 
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wParam, LPARAM lParam) {
         try {
+            if(uMsg == WM_STOP_EVENT_PUMP) {
+                USER32.PostQuitMessage(0);
+                return new LRESULT(0);
+            }
+
             final var listener = listeners.get(uMsg);
             if(listener != null)
                 return listener.wndProc(hwnd, uMsg, wParam, lParam);
