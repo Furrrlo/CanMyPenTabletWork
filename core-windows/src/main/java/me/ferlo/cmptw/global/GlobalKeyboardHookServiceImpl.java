@@ -38,7 +38,8 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
                 throw new GlobalKeyboardHookException(
                         "Failed to register GlobalKeyboardHookServiceImpl",
                         new Win32Exception(Kernel32.INSTANCE.GetLastError()));
-            windowService.addListener(WH_HOOK, this::wndProc);
+            windowService.addListener(WH_HOOK_ACTION, this::wndProc);
+            windowService.addListener(WH_HOOK_NOREMOVE, this::wndProc);
             registered = true;
         }
     }
@@ -52,7 +53,8 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
             if (!registered)
                 return;
 
-            windowService.removeListener(WH_HOOK, this::wndProc);
+            windowService.removeListener(WH_HOOK_ACTION, this::wndProc);
+            windowService.removeListener(WH_HOOK_NOREMOVE, this::wndProc);
             if(!GlobalKeyboardHook.INSTANCE.StopHook())
                 throw new GlobalKeyboardHookException(
                         "Failed to unregister GlobalKeyboardHookServiceImpl",
@@ -72,9 +74,13 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
     }
 
     private LRESULT wndProc(HWND hwnd, int uMsg, WPARAM wparam, LPARAM lparam) {
+        if(uMsg != WH_HOOK_ACTION && uMsg != WH_HOOK_NOREMOVE)
+            throw new UnsupportedOperationException("Unsupported nCode type " + (uMsg - WH_HOOK));
+
         final int vKeyCode = wparam.intValue();
         final int flags = lparam.intValue();
         final GlobalKeyEvent evt = new GlobalKeyEvent(
+                uMsg == WH_HOOK_ACTION ? GlobalKeyEvent.HookCode.ACTION : GlobalKeyEvent.HookCode.NOREMOVE,
                 vKeyCode,
                 flags & 0xFFFF, // 0-15
                 (flags >> 16) & 0xFF, // 16-23
@@ -84,8 +90,8 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
                 ((flags >> 31) & 0x1) == 0 // 31
         );
 
-        for(var listener : listeners)
-            if(listener.onGlobalKeyEvent(evt))
+        for (var listener : listeners)
+            if (listener.onGlobalKeyEvent(evt))
                 return new LRESULT(1);
         return new LRESULT(0);
     }

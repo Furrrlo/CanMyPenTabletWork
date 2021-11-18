@@ -209,7 +209,9 @@ public class WinKeyboardHookService implements KeyboardHookService {
             final boolean rawEventPressed = rawEvent.keyState() == RawKeyEvent.State.DOWN;
             final boolean globalEventPressed = globalEvent.isKeyDown();
             if(rawEventPressed == globalEventPressed && rawEvent.vKeyCode() == globalEvent.vKeyCode()) {
-                iter.remove();
+                // Only remove it if it's actually processed
+                if(globalEvent.nCode() != GlobalKeyEvent.HookCode.NOREMOVE)
+                    iter.remove();
                 return Optional.of(rawEvent);
             }
         }

@@ -14,11 +14,23 @@ package me.ferlo.cmptw.global;
  *                      it is 0 if the key is up.
  * @param isKeyDown    The transition state. The value is 0 if the key is being pressed and 1 if it is being released.
  */
-public record GlobalKeyEvent(int vKeyCode,
+public record GlobalKeyEvent(HookCode nCode,
+                             int vKeyCode,
                              int repeatCount,
                              int scanCode,
                              boolean isExtendedKey,
                              boolean isAltPressed,
                              boolean wasKeyDown,
                              boolean isKeyDown) {
+
+    public enum HookCode {
+        /** The wParam and lParam parameters contain information about a keystroke message. */
+        ACTION,
+        /**
+         * The wParam and lParam parameters contain information about a keystroke message,
+         * and the keystroke message has not been removed from the message queue.
+         * (An application called the PeekMessage function, specifying the PM_NOREMOVE flag.)
+         */
+        NOREMOVE
+    }
 }

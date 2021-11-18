@@ -39,9 +39,9 @@ BOOL alreadyHooked = false;
 
 static LRESULT CALLBACK HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	if (nCode >= 0)
+	if (nCode == HC_ACTION || nCode == HC_NOREMOVE)
 	{
-		LRESULT blockKey = SendMessage(callback_reciever, WM_HOOK, wParam, lParam);
+		LRESULT blockKey = SendMessage(callback_reciever, WM_HOOK + nCode, wParam, lParam);
 		if (blockKey)
 		{
 			return 1;
