@@ -119,7 +119,7 @@ class WindowServiceImpl implements WindowService {
             wndCls = null;
 
             if(!exceptions.isEmpty()) {
-                final WindowException ex = new WindowException("Failed to unregister RawKeyboardInputServiceImpl");
+                final WindowException ex = new WindowException("Failed to unregister WindowServiceImpl");
                 exceptions.forEach(ex::addSuppressed);
                 throw ex;
             }

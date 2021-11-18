@@ -124,9 +124,9 @@ public class WinKeyboardHookService implements KeyboardHookService {
                     rawKeyboardInputService.removeListener(rawKeyListener);
 
                     if(isServicesOwner) {
-                        windowService.unregister();
-                        rawKeyboardInputService.unregister();
                         globalKeyboardHookService.unregister();
+                        rawKeyboardInputService.unregister();
+                        windowService.unregister();
                     }
                 }
             }

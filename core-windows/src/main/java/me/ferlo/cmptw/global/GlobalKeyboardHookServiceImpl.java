@@ -1,5 +1,7 @@
 package me.ferlo.cmptw.global;
 
+import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.LPARAM;
 import com.sun.jna.platform.win32.WinDef.LRESULT;
@@ -32,9 +34,12 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
             if(registered)
                 return;
 
-            registered = true;
-            NehKbdHook.INSTANCE.StartHook(windowService.getHwnd());
+            if(!NehKbdHook.INSTANCE.StartHook(windowService.getHwnd()))
+                throw new GlobalKeyboardHookException(
+                        "Failed to register GlobalKeyboardHookServiceImpl",
+                        new Win32Exception(Kernel32.INSTANCE.GetLastError()));
             windowService.addListener(WH_HOOK, this::wndProc);
+            registered = true;
         }
     }
 
@@ -47,9 +52,12 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
             if (!registered)
                 return;
 
-            registered = false;
-            NehKbdHook.INSTANCE.StopHook();
             windowService.removeListener(WH_HOOK, this::wndProc);
+            if(!NehKbdHook.INSTANCE.StopHook())
+                throw new GlobalKeyboardHookException(
+                        "Failed to unregister GlobalKeyboardHookServiceImpl",
+                        new Win32Exception(Kernel32.INSTANCE.GetLastError()));
+            registered = false;
         }
     }
 
