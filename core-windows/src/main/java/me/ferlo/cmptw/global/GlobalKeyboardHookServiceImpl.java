@@ -1,6 +1,7 @@
 package me.ferlo.cmptw.global;
 
 import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.LPARAM;
@@ -80,6 +81,7 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
         final int vKeyCode = wparam.intValue();
         final int flags = lparam.intValue();
         final GlobalKeyEvent evt = new GlobalKeyEvent(
+                User32.INSTANCE.GetForegroundWindow(),
                 uMsg == WH_HOOK_ACTION ? GlobalKeyEvent.HookCode.ACTION : GlobalKeyEvent.HookCode.NOREMOVE,
                 vKeyCode,
                 flags & 0xFFFF, // 0-15

@@ -1,5 +1,7 @@
 package me.ferlo.cmptw.global;
 
+import com.sun.jna.platform.win32.WinDef.HWND;
+
 /**
  * See <a>https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms644984(v=vs.85)</a>
  *
@@ -14,7 +16,8 @@ package me.ferlo.cmptw.global;
  *                      it is 0 if the key is up.
  * @param isKeyDown    The transition state. The value is 0 if the key is being pressed and 1 if it is being released.
  */
-public record GlobalKeyEvent(HookCode nCode,
+public record GlobalKeyEvent(HWND hWnd,
+                             HookCode nCode,
                              int vKeyCode,
                              int repeatCount,
                              int scanCode,

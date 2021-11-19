@@ -1,6 +1,7 @@
 package me.ferlo.cmptw.hook;
 
 import com.sun.jna.platform.win32.User32;
+import com.sun.jna.ptr.IntByReference;
 import me.ferlo.cmptw.global.GlobalKeyEvent;
 import me.ferlo.cmptw.global.GlobalKeyboardHookListener;
 import me.ferlo.cmptw.global.GlobalKeyboardHookService;
@@ -304,7 +305,12 @@ public class WinKeyboardHookService implements KeyboardHookService {
                 device.getModifiersMask() | lockKeysModifiers | KeyboardHookEvent.LALT_MASK :
                 device.getModifiersMask() | lockKeysModifiers;
 
+        final IntByReference pid = new IntByReference();
+        if (User32.INSTANCE.GetWindowThreadProcessId(globalEvent.hWnd(), pid) == 0)
+            pid.setValue(0);
+
         final KeyboardHookEvent evt = new KeyboardHookEvent(
+                pid.getValue(),
                 device,
                 vKey,
                 globalEvent.scanCode(),

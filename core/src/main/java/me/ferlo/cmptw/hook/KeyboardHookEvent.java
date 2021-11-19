@@ -50,6 +50,7 @@ import java.awt.event.KeyEvent;
  *                       {@code KEY_LOCATION_RIGHT}, and {@code KEY_LOCATION_NUMPAD}.
  */
 public record KeyboardHookEvent(
+        int pid,
         KeyboardHookDevice device,
         int vKeyCode,
         int scanCode,
