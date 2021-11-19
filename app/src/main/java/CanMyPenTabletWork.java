@@ -1,3 +1,6 @@
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
+import me.ferlo.cmptw.gui.CanMyPenTabletWorkTray;
 import me.ferlo.cmptw.hook.*;
 import me.ferlo.cmptw.process.Process;
 import me.ferlo.cmptw.process.ProcessService;
@@ -5,6 +8,7 @@ import me.ferlo.cmptw.script.ScriptEngine;
 import me.ferlo.cmptw.script.ScriptEnvironment;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import javax.swing.*;
 import java.awt.*;
 import java.util.Optional;
 
@@ -14,13 +18,24 @@ public class CanMyPenTabletWork {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
+        // TODO: catch startup exceptions and show a panel
+        if (!SystemTray.isSupported())
+            throw new AssertionError("System tray is not supported");
+
         final var keyboardHookService = KeyboardHookService.create();
         final HookService hookService = new InMemoryHookService();
         final var processService = ProcessService.create();
         final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
 
-        keyboardHookService.addListener(event -> hook(hookService, processService, scriptEngine, event));
+        keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
+
+        IconFontSwing.register(FontAwesome.getIconFont());
+
+        final CanMyPenTabletWorkTray tray;
+        SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, processService));
+
         keyboardHookService.register();
+        SwingUtilities.invokeLater(tray::showGui);
     }
 
     private static boolean hook(HookService hookService,

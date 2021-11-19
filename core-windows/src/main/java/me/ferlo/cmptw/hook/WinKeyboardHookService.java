@@ -322,7 +322,7 @@ public class WinKeyboardHookService implements KeyboardHookService {
                 globalEvent.isKeyDown(),
                 globalEvent.repeatCount()
         );
-        return listeners.stream().sequential().anyMatch(l -> l.onKeyHook(evt));
+        return listeners.stream().sequential().anyMatch(l -> l.onKeyHook(this, l, evt));
     }
 
     private record SavedRawEvent(RawKeyEvent rawEvent, long timestamp) {

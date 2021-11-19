@@ -2,5 +2,5 @@ package me.ferlo.cmptw.hook;
 
 public interface KeyboardHookListener {
 
-    boolean onKeyHook(KeyboardHookEvent event);
+    boolean onKeyHook(KeyboardHookService service, KeyboardHookListener listener, KeyboardHookEvent event);
 }
