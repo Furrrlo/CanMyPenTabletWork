@@ -5,6 +5,7 @@ import jiconfont.swing.IconFontSwing;
 
 import java.awt.*;
 import java.awt.image.AbstractMultiResolutionImage;
+import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.util.HashMap;
 import java.util.List;
@@ -56,9 +57,26 @@ public class MultiResolutionIconFont extends AbstractMultiResolutionImage {
     }
 
     private Image buildImage(double size) {
-        return color == null ?
+        final Image img = color == null ?
                 IconFontSwing.buildImage(iconCode, (float) size) :
                 IconFontSwing.buildImage(iconCode, (float) size, color);
+        // Center the icon in a square, cause that's what being asked
+        final int actualSize = Math.max(img.getWidth(null), img.getHeight(null));
+        final BufferedImage iconImg = new BufferedImage(actualSize, actualSize, BufferedImage.TYPE_INT_ARGB);
+        final Graphics2D g2d = iconImg.createGraphics();
+        try {
+            g2d.setColor(new Color(0, true));
+            g2d.drawRect(0, 0, actualSize, actualSize);
+            g2d.drawImage(
+                    img,
+                    (int) ((actualSize - img.getWidth(null)) / 2d),
+                    (int) ((actualSize - img.getWidth(null)) / 2d),
+                    new Color(0, true),
+                    null);
+            return iconImg;
+        } finally {
+            g2d.dispose();
+        }
     }
 
     @Override
