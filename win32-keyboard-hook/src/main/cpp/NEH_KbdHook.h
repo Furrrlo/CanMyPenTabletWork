@@ -27,4 +27,7 @@ SOFTWARE.
 #define NEHKBDHOOK_API extern "C" __declspec(dllexport)
 #define WM_HOOK 0x8001
 
+NEHKBDHOOK_API BOOL StartHook(HWND _callback_reciever);
+NEHKBDHOOK_API BOOL StopHook();
+
 extern HINSTANCE hookInstance;
