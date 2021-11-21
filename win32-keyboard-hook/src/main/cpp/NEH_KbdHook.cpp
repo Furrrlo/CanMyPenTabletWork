@@ -41,11 +41,20 @@ static LRESULT CALLBACK HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	if (nCode == HC_ACTION || nCode == HC_NOREMOVE)
 	{
-		LRESULT blockKey = SendMessage(callback_reciever, WM_HOOK + nCode, wParam, lParam);
-		if (blockKey)
+		DWORD_PTR blockKey;
+		LRESULT success = SendMessageTimeout(callback_reciever, WM_HOOK + nCode, wParam, lParam, SMTO_NOTIMEOUTIFNOTHUNG, 0, &blockKey);
+		if(success)
 		{
-			return 1;
+			return blockKey;
 		}
+
+		if(GetLastError() == ERROR_INVALID_WINDOW_HANDLE)
+		{
+		    StopHook();
+		    return 0;
+		}
+
+        return 0;
 	}
 	return CallNextHookEx(kbHook, nCode, wParam, lParam);
 }
