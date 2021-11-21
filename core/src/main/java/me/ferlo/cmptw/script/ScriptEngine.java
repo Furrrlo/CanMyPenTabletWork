@@ -16,4 +16,8 @@ public interface ScriptEngine {
             throw new UncheckedIOException("Failed to read string from script " + script, ex);
         }
     }
+
+    String getFileExtension();
+
+    String getNewScript();
 }

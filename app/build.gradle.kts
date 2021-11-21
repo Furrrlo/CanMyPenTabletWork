@@ -12,6 +12,9 @@ dependencies {
     implementation(project(":core"))
     runtimeOnly(project(":core-windows"))
 
+    implementation("com.google.code.gson:gson:2.8.9")
+    implementation("net.harawata:appdirs:1.2.1")
+
     // Logging dependencies
     val slf4j = project.ext["slf4jVersion"] as String
     // TODO: Wait for log4j to fix https://github.com/qos-ch/slf4j/commit/3e2381ea694c
