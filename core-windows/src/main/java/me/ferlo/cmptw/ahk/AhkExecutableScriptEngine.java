@@ -45,9 +45,6 @@ class AhkExecutableScriptEngine implements ExecutableScriptEngine {
     @Override
     public void execute(Path script) {
         try {
-            System.out.println(Arrays.toString(new String[] {
-                    executable.toAbsolutePath().toString(), "/force", "/ErrorStdOut=UTF-8", script.toAbsolutePath().toString()
-            }));
             new ProcessBuilder()
                     .command(executable.toAbsolutePath().toString(), "/force", "/ErrorStdOut=UTF-8", script.toAbsolutePath().toString())
                     .redirectErrorStream(true)
