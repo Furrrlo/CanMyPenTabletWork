@@ -66,14 +66,28 @@ NEHKBDHOOK_API BOOL StartHook(HWND _callback_reciever)
 	{
 		return FALSE;
 	}
+
 	if (hookInstance == NULL)
 	{
-		MessageBox(NULL, L"FAil", L"Dbg", MB_OK);
+		MessageBox(NULL, L"Failed to inject hook (DLL module is null)", L"Error", MB_OK);
+		return FALSE;
 	}
-	kbHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)HookCallback, hookInstance, 0);
 
+	kbHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)HookCallback, hookInstance, 0);
 	if (kbHook == NULL)
 	{
+	    DWORD err = GetLastError();
+
+	    wchar_t msg[MAX_PATH + 40] = L"Failed to inject hook using DLL module: ";
+        if(!GetModuleFileName(hookInstance, msg + 40, MAX_PATH))
+        {
+		    MessageBox(NULL, L"Failed to inject hook", L"Error", MB_OK);
+		    SetLastError(err);
+		    return FALSE;
+        }
+
+		MessageBox(NULL, msg, L"Error", MB_OK);
+		SetLastError(err);
 		return FALSE;
 	}
 
