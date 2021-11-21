@@ -1,3 +1,4 @@
+import com.github.weisj.darklaf.LafManager;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import me.ferlo.cmptw.gui.CanMyPenTabletWorkTray;
@@ -30,9 +31,13 @@ public class CanMyPenTabletWork {
         keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
 
         IconFontSwing.register(FontAwesome.getIconFont());
+        LafManager.installTheme(LafManager.getPreferredThemeStyle());
 
         final CanMyPenTabletWorkTray tray;
         SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, processService));
+
+        LafManager.enabledPreferenceChangeReporting(true);
+        LafManager.addThemePreferenceChangeListener(tray);
 
         keyboardHookService.register();
         SwingUtilities.invokeLater(tray::showGui);

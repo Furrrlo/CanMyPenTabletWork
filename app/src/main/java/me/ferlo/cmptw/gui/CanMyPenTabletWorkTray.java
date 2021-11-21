@@ -1,5 +1,8 @@
 package me.ferlo.cmptw.gui;
 
+import com.github.weisj.darklaf.theme.event.ThemePreferenceChangeEvent;
+import com.github.weisj.darklaf.theme.event.ThemePreferenceListener;
+import com.github.weisj.darklaf.theme.info.ColorToneRule;
 import jiconfont.icons.font_awesome.FontAwesome;
 import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconFont;
 import me.ferlo.cmptw.hook.HookService;
@@ -10,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 
-public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService {
+public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService, ThemePreferenceListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CanMyPenTabletWorkTray.class);
 
@@ -78,6 +81,14 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
         }
 
         System.exit(failed ? 1 : 0);
+    }
+
+    @Override
+    public void themePreferenceChanged(ThemePreferenceChangeEvent e) {
+        boolean isDarkTheme = e.getPreferredThemeStyle().getColorToneRule() == ColorToneRule.DARK;
+        setImage(new MultiResolutionIconFont(FontAwesome.PENCIL_SQUARE_O, 16, isDarkTheme ? Color.WHITE : Color.BLACK));
+        if(gui != null)
+            gui.setIconImage(getImage());
     }
 
     private class Gui extends CanMyPenTabletWorkFrame {

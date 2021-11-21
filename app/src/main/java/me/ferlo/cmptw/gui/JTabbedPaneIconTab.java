@@ -33,10 +33,15 @@ public class JTabbedPaneIconTab extends JTabbedPaneTab {
         if(image == null)
             image = createTransparentImage(TAB_ICON_SIZE, TAB_ICON_SIZE);
 
-        final JPanel tabPanel = new JPanel();
+        final JPanel tabPanel = new JPanel() {
+            @Override
+            public void paintComponent(Graphics g) {
+                // Instead of setting the component opaque, do this
+                // otherwise DarkLaf tries to fix a bug with antialiasing and ends up drawing the text with a bg
+                // See https://github.com/weisJ/darklaf/blob/69ea0119a1f9f98dadf50e955c8e5e862a3f18b3/core/src/main/java/com/github/weisj/darklaf/graphics/StringPainter.java#L131
+            }
+        };
         tabPanel.setLayout(new MigLayout(new LC().flowY().fill().insetsAll("1").gridGap("1", "1")));
-        tabPanel.setOpaque(false);
-        tabPanel.setBackground(new Color(0, true));
 
         final JLabel iconLabel = new JLabel(new ImageIcon(image));
         tabPanel.add(iconLabel, new CC().alignX("center"));

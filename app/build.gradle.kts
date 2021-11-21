@@ -24,6 +24,7 @@ dependencies {
     runtimeOnly("org.apache.logging.log4j:log4j-core:$log4j")
 
     // Gui
+    implementation("com.github.weisj:darklaf-core:2.7.2")
     implementation("org.swinglabs:swingx-core:1.6.2-2")
     implementation("com.miglayout:miglayout:3.7.4")
     implementation("com.github.jiconfont:jiconfont-swing:1.0.0")
