@@ -39,8 +39,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         hookInstance = hModule;
         break;
     case DLL_PROCESS_DETACH:
-        StopHook();
-        break;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
         break;
