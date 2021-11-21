@@ -5,6 +5,7 @@ import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconFont;
 import me.ferlo.cmptw.gui.tabbed.JMyTabbedPane;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookService;
+import me.ferlo.cmptw.script.ScriptEngine;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -19,6 +20,7 @@ import java.util.Objects;
 class ApplicationPane extends JPanel {
 
     private final KeyboardHookService keyboardHookService;
+    private final ScriptEngine scriptEngine;
 
     private final ListenableValue<Hook.Application> application;
     private final ListenableValue<Hook.ApplicationHook> applicationHook;
@@ -28,9 +30,11 @@ class ApplicationPane extends JPanel {
     private final JButton removeScriptBtn;
 
     public ApplicationPane(KeyboardHookService keyboardHookService,
+                           ScriptEngine scriptEngine,
                            ListenableValue<Hook.Application> application,
                            ListenableValue<Hook.ApplicationHook> applicationHook) {
         this.keyboardHookService = keyboardHookService;
+        this.scriptEngine = scriptEngine;
 
         this.application = application;
         this.applicationHook = applicationHook;
@@ -99,7 +103,7 @@ class ApplicationPane extends JPanel {
                     final var script = new Hook.HookScript(
                             "New",
                             new Hook.KeyStroke(keyboardEvt.awtKeyCode(), keyboardEvt.modifiers()),
-                            "");
+                            scriptEngine.getNewScript());
                     addScriptComponent(script);
                     applicationHook.update(d -> d.addScript(script));
                 })));

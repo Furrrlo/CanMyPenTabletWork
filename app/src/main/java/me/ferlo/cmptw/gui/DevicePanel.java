@@ -6,6 +6,7 @@ import me.ferlo.cmptw.gui.tabbed.JMyTabbedPane;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import me.ferlo.cmptw.process.ProcessService;
+import me.ferlo.cmptw.script.ScriptEngine;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -20,6 +21,7 @@ import java.util.Optional;
 public class DevicePanel extends JPanel {
 
     private final KeyboardHookService keyboardHookService;
+    private final ScriptEngine scriptEngine;
     private final ProcessService processService;
 
     private final ListenableValue<Hook> hook;
@@ -30,9 +32,11 @@ public class DevicePanel extends JPanel {
     private final JButton removeApplicationBtn;
 
     public DevicePanel(KeyboardHookService keyboardHookService,
+                       ScriptEngine scriptEngine,
                        ProcessService processService,
                        ListenableValue<Hook> hook, ListenableValue<Hook.Device> device) {
         this.processService = processService;
+        this.scriptEngine = scriptEngine;
         this.keyboardHookService = keyboardHookService;
         this.hook = hook;
         this.device = device;
@@ -144,7 +148,7 @@ public class DevicePanel extends JPanel {
         applicationHook.addListener((oldV, newV) -> hook.update(h -> h.replaceApplicationHook(oldV, newV)));
 
         final var tab = applicationsPane.insertTab(
-                new ApplicationTab(keyboardHookService, processService, applicationHook),
+                new ApplicationTab(keyboardHookService, scriptEngine, processService, applicationHook),
                 applicationsPane.getTabCount() - 1);
         tab.select();
     }

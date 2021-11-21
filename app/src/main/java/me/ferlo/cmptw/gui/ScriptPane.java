@@ -63,6 +63,10 @@ public class ScriptPane extends JPanel {
 
         add(infoPanel, new CC().growX());
         add(new JLabel("Script: "));
-        add(new JTextArea(), new CC().grow());
+        add(new JListeningTextArea<>(
+                script,
+                Hook.HookScript::script,
+                (v, newScript) -> v.update(a -> a.withScript(newScript))
+        ), new CC().grow());
     }
 }

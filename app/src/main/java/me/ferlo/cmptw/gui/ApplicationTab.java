@@ -4,6 +4,7 @@ import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconImage;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import me.ferlo.cmptw.process.ProcessService;
+import me.ferlo.cmptw.script.ScriptEngine;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,16 +12,19 @@ import java.awt.*;
 class ApplicationTab extends JTabbedPaneIconTab {
 
     private final KeyboardHookService keyboardHookService;
+    private final ScriptEngine scriptEngine;
     private final ProcessService processService;
     private final ListenableValue<Hook.ApplicationHook> applicationHook;
 
     public ApplicationTab(KeyboardHookService keyboardHookService,
+                          ScriptEngine scriptEngine,
                           ProcessService processService,
                           ListenableValue<Hook.ApplicationHook> applicationHook) {
-        this(keyboardHookService, processService, applicationHook, new ListenableValue<>(applicationHook.get().application()));
+        this(keyboardHookService, scriptEngine, processService, applicationHook, new ListenableValue<>(applicationHook.get().application()));
     }
 
     private ApplicationTab(KeyboardHookService keyboardHookService,
+                           ScriptEngine scriptEngine,
                            ProcessService processService,
                            ListenableValue<Hook.ApplicationHook> applicationHook,
                            ListenableValue<Hook.Application> application) {
@@ -30,7 +34,7 @@ class ApplicationTab extends JTabbedPaneIconTab {
                         TAB_ICON_SIZE,
                         processService.extractProcessIcons(applicationHook.get().application().icon()))),
                 tabComponentFor(processService, applicationHook.get().application()),
-                new ApplicationPane(keyboardHookService, application, applicationHook),
+                new ApplicationPane(keyboardHookService, scriptEngine, application, applicationHook),
                 applicationHook.get().application().name()
         );
 
@@ -45,8 +49,9 @@ class ApplicationTab extends JTabbedPaneIconTab {
             setTabComponent(tabComponentFor(processService, newV));
         });
 
-        this.processService = processService;
         this.keyboardHookService = keyboardHookService;
+        this.scriptEngine = scriptEngine;
+        this.processService = processService;
         this.applicationHook = applicationHook;
     }
 

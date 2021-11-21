@@ -38,7 +38,7 @@ public class CanMyPenTabletWork {
         LafManager.installTheme(LafManager.getPreferredThemeStyle());
 
         final CanMyPenTabletWorkTray tray;
-        SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, processService));
+        SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, scriptEngine, processService));
 
         LafManager.enabledPreferenceChangeReporting(true);
         LafManager.addThemePreferenceChangeListener(tray);

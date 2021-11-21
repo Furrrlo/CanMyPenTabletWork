@@ -7,20 +7,27 @@ import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.HookService;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import me.ferlo.cmptw.process.ProcessService;
+import me.ferlo.cmptw.script.ScriptEngine;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import java.awt.*;
+import java.io.IOException;
 import java.util.List;
 import java.util.*;
 
 class HooksPane extends JComboBoxTabbedPane<ListenableValue<Hook>> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(HooksPane.class);
+
     private final KeyboardHookService keyboardHookService;
+    private final ScriptEngine scriptEngine;
     private final ProcessService processService;
     private final HookService hookService;
 
@@ -36,11 +43,13 @@ class HooksPane extends JComboBoxTabbedPane<ListenableValue<Hook>> {
 
     public HooksPane(HookService hookService,
                      KeyboardHookService keyboardHookService,
+                     ScriptEngine scriptEngine,
                      ProcessService processService) {
         super(DefaultOption::new);
 
-        this.processService = processService;
         this.keyboardHookService = keyboardHookService;
+        this.scriptEngine = scriptEngine;
+        this.processService = processService;
         this.hookService = hookService;
 
         setDefaultRenderer(new BasicComboBoxRenderer() {
@@ -104,7 +113,14 @@ class HooksPane extends JComboBoxTabbedPane<ListenableValue<Hook>> {
         applyBtn = new JButton("Apply");
         currentConfig.addListener((oldV, newV) -> applyBtn.setEnabled(true));
         applyBtn.addActionListener(evt -> {
-            hookService.save(currentConfig.get());
+            try {
+                hookService.save(currentConfig.get());
+            } catch (IOException ex) {
+                LOGGER.error("Failed to save current config", ex);
+                // TODO: show error pane
+                return;
+            }
+
             applyBtn.setEnabled(false);
         });
 
@@ -144,7 +160,7 @@ class HooksPane extends JComboBoxTabbedPane<ListenableValue<Hook>> {
         final var device = new ListenableValue<>(hook.get().device());
         device.addListener((oldV, newV) -> hook.update(h -> h.withDevice(newV)));
 
-        final var panel = new DevicePanel(keyboardHookService, processService, hook, device);
+        final var panel = new DevicePanel(keyboardHookService, scriptEngine, processService, hook, device);
         // If it's the dummy one, disable everything
         if(hookIn == dummyHook) {
             final Deque<Component> components = new LinkedList<>(List.of(panel));

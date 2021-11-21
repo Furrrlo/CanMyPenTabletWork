@@ -8,6 +8,7 @@ import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconFont;
 import me.ferlo.cmptw.hook.HookService;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import me.ferlo.cmptw.process.ProcessService;
+import me.ferlo.cmptw.script.ScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +20,14 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
 
     private final HookService hookService;
     private final KeyboardHookService keyboardHookService;
+    private final ScriptEngine scriptEngine;
     private final ProcessService processService;
 
     private CanMyPenTabletWorkFrame gui;
 
     public CanMyPenTabletWorkTray(HookService hookService,
                                   KeyboardHookService keyboardHookService,
+                                  ScriptEngine scriptEngine,
                                   ProcessService processService) {
         super(
                 new MultiResolutionIconFont(FontAwesome.PENCIL_SQUARE_O, 16, Color.WHITE),
@@ -34,6 +37,7 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
 
         this.hookService = hookService;
         this.keyboardHookService = keyboardHookService;
+        this.scriptEngine = scriptEngine;
         this.processService = processService;
 
         final PopupMenu popup = new PopupMenu();
@@ -55,7 +59,7 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
         if(gui != null)
             return;
 
-        gui = new Gui(hookService, keyboardHookService, processService, getToolTip(), getImage());
+        gui = new Gui(hookService, keyboardHookService, scriptEngine, processService, getToolTip(), getImage());
         gui.setVisible(true);
     }
 
@@ -95,10 +99,11 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
 
         public Gui(HookService hookService,
                    KeyboardHookService keyboardHookService,
+                   ScriptEngine scriptEngine,
                    ProcessService processService,
                    String title,
                    Image icon) throws HeadlessException {
-            super(hookService, keyboardHookService, processService, title, icon);
+            super(hookService, keyboardHookService, scriptEngine, processService, title, icon);
         }
 
         @Override
