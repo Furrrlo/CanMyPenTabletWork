@@ -8,6 +8,10 @@ import me.ferlo.cmptw.process.ProcessService;
 import me.ferlo.cmptw.script.ScriptEngine;
 import me.ferlo.cmptw.script.ScriptEnvironment;
 import net.harawata.appdirs.AppDirsFactory;
+import org.oxbow.swingbits.dialog.task.IContentDesign;
+import org.oxbow.swingbits.dialog.task.TaskDialogs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import javax.swing.*;
@@ -16,35 +20,47 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 public class CanMyPenTabletWork {
-    public static void main(String[] args) throws Exception {
-        // Redirect jul to slf4j
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
 
-        // TODO: catch startup exceptions and show a panel
-        if (!SystemTray.isSupported())
-            throw new AssertionError("System tray is not supported");
+    private static final Logger LOGGER = LoggerFactory.getLogger(CanMyPenTabletWork.class);
 
-        final var keyboardHookService = KeyboardHookService.create();
-        final var processService = ProcessService.create();
-        final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
-        final HookService hookService = new FileBasedHookService(scriptEngine, Paths.get(Optional
-                .ofNullable(System.getenv("CMPTW_CONFIG_DATA"))
-                .orElse(AppDirsFactory.getInstance().getUserConfigDir("CanMyPenTabletWork", null, null))));
+    public static void main(String[] args) {
+        try {
+            // Redirect jul to slf4j
+            SLF4JBridgeHandler.removeHandlersForRootLogger();
+            SLF4JBridgeHandler.install();
 
-        keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
+            if (!SystemTray.isSupported())
+                throw new AssertionError("System tray is not supported");
 
-        IconFontSwing.register(FontAwesome.getIconFont());
-        LafManager.installTheme(LafManager.getPreferredThemeStyle());
+            final var keyboardHookService = KeyboardHookService.create();
+            final var processService = ProcessService.create();
+            final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
+            final HookService hookService = new FileBasedHookService(scriptEngine, Paths.get(Optional
+                    .ofNullable(System.getenv("CMPTW_CONFIG_DATA"))
+                    .orElse(AppDirsFactory.getInstance().getUserConfigDir("CanMyPenTabletWork", null, null))));
 
-        final CanMyPenTabletWorkTray tray;
-        SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, scriptEngine, processService));
+            keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
 
-        LafManager.enabledPreferenceChangeReporting(true);
-        LafManager.addThemePreferenceChangeListener(tray);
+            IconFontSwing.register(FontAwesome.getIconFont());
+            LafManager.registerDefaultsAdjustmentTask((currentTheme, properties) -> {
+                UIManager.getDefaults().put(IContentDesign.COLOR_MESSAGE_BACKGROUND, properties.get("controlBackground"));
+                UIManager.getDefaults().put(IContentDesign.COLOR_INSTRUCTION_FOREGROUND, properties.get("textForegroundDefault"));
+            });
+            LafManager.installTheme(LafManager.getPreferredThemeStyle());
 
-        keyboardHookService.register();
-        SwingUtilities.invokeLater(tray::showGui);
+            final CanMyPenTabletWorkTray tray;
+            SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, scriptEngine, processService));
+
+            LafManager.enabledPreferenceChangeReporting(true);
+            LafManager.addThemePreferenceChangeListener(tray);
+
+            keyboardHookService.register();
+            SwingUtilities.invokeLater(tray::showGui);
+        } catch (Exception ex) {
+            LOGGER.error("Failed to start", ex);
+            TaskDialogs.showException(new Exception("Failed to start", ex));
+            System.exit(-1);
+        }
     }
 
     private static boolean hook(HookService hookService,

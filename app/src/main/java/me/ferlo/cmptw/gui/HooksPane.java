@@ -12,6 +12,7 @@ import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
+import org.oxbow.swingbits.dialog.task.TaskDialogs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,8 +117,8 @@ class HooksPane extends JComboBoxTabbedPane<ListenableValue<Hook>> {
             try {
                 hookService.save(currentConfig.get());
             } catch (IOException ex) {
-                LOGGER.error("Failed to save current config", ex);
-                // TODO: show error pane
+                LOGGER.error("Failed to save config", ex);
+                TaskDialogs.showException(new Exception("Failed to save config", ex));
                 return;
             }
 
