@@ -25,6 +25,11 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RawKeyboardInputServiceImpl.class);
     private static final RawInput RAW_INPUT = RawInput.INSTANCE;
+    private static final RawInputDevice UNKNOWN_DEVICE = new RawInputDevice(
+            "Unknwon",
+            "Unknwon",
+            RawInput.RIM_TYPEHID
+    );
 
     private final WindowService windowService;
     private final Object lock = new Object();
@@ -148,7 +153,9 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
             return new LRESULT(0);
 
         final RawKeyEvent evt = new RawKeyEvent(
-                devices.get(input.header.hDevice), // TODO: add default
+                input.header.hDevice == null ?
+                        UNKNOWN_DEVICE :
+                        devices.getOrDefault(input.header.hDevice, UNKNOWN_DEVICE),
                 ((input.data.keyboard.Flags.intValue() & RI_KEY_BREAK) != 0) ?
                         RawKeyEvent.State.UP :
                         RawKeyEvent.State.DOWN,
