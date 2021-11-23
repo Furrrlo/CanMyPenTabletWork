@@ -1,23 +1,29 @@
 package me.ferlo.cmptw.gui;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+
 import javax.swing.*;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class JListeningTextArea<T> extends JTextArea {
+public class JListeningRSyntaxTextArea<T> extends RSyntaxTextArea {
 
-    public JListeningTextArea(ListenableValue<T> value,
-                              Function<T, String> getter,
-                              BiConsumer<ListenableValue<T>, String> setter) {
+    public JListeningRSyntaxTextArea(ListenableValue<T> value,
+                                     Function<T, String> getter,
+                                     BiConsumer<ListenableValue<T>, String> setter) {
         setText(getter.apply(value.get()));
+        discardAllEdits();
 
         value.addListener((oldV, newV) -> {
             final String newName = getter.apply(newV);
             if (Objects.equals(newName, getText()))
                 return;
 
-            SwingUtilities.invokeLater(() -> setText(newName));
+            SwingUtilities.invokeLater(() -> {
+                discardAllEdits();
+                setText(newName);
+            });
         });
         getDocument().addDocumentListener((SimpleDocumentListener) e -> SwingUtilities.invokeLater(() -> {
             final String newName = getText();

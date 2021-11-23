@@ -33,4 +33,6 @@ dependencies {
     implementation("com.miglayout:miglayout:3.7.4")
     implementation("com.github.jiconfont:jiconfont-swing:1.0.0")
     implementation("com.github.jiconfont:jiconfont-font_awesome:4.7.0.1")
+    implementation("com.fifesoft:rsyntaxtextarea:${project.ext["rSyntaxTextAreaVersion"]}")
+    implementation("com.github.weisj:darklaf-extensions-rsyntaxarea:0.3.4")
 }

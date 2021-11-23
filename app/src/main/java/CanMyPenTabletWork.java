@@ -8,6 +8,9 @@ import me.ferlo.cmptw.process.ProcessService;
 import me.ferlo.cmptw.script.ScriptEngine;
 import me.ferlo.cmptw.script.ScriptEnvironment;
 import net.harawata.appdirs.AppDirsFactory;
+import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 import org.oxbow.swingbits.dialog.task.IContentDesign;
 import org.oxbow.swingbits.dialog.task.TaskDialogs;
 import org.slf4j.Logger;
@@ -47,6 +50,7 @@ public class CanMyPenTabletWork {
                 UIManager.getDefaults().put(IContentDesign.COLOR_INSTRUCTION_FOREGROUND, properties.get("textForegroundDefault"));
             });
             LafManager.installTheme(LafManager.getPreferredThemeStyle());
+            scriptEngine.createSyntaxStyle((AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance(), FoldParserManager.get());
 
             final CanMyPenTabletWorkTray tray;
             SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, scriptEngine, processService));

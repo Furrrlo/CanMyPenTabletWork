@@ -1,25 +1,33 @@
 package me.ferlo.cmptw.gui;
 
+import com.github.weisj.darklaf.components.text.NumberedTextComponent;
+import com.github.weisj.darklaf.extensions.rsyntaxarea.DarklafRSyntaxTheme;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookEvent;
 import me.ferlo.cmptw.hook.KeyboardHookService;
+import me.ferlo.cmptw.script.ScriptEngine;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
+import org.fife.ui.rsyntaxtextarea.Theme;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
-import java.util.Objects;
 
 public class ScriptPane extends JPanel {
 
+    private static Theme syntaxTheme;
+
     private final KeyboardHookService keyboardHookService;
+    private final ScriptEngine scriptEngine;
     private final ListenableValue<Hook.HookScript> script;
 
     public ScriptPane(KeyboardHookService keyboardHookService,
+                      ScriptEngine scriptEngine,
                       ListenableValue<Hook.HookScript> script) {
         this.keyboardHookService = keyboardHookService;
+        this.scriptEngine = scriptEngine;
         this.script = script;
 
         setLayout(new MigLayout(
@@ -63,10 +71,17 @@ public class ScriptPane extends JPanel {
 
         add(infoPanel, new CC().growX());
         add(new JLabel("Script: "));
-        add(new JListeningTextArea<>(
+        add(new NumberedTextComponent(new JListeningRSyntaxTextArea<>(
                 script,
                 Hook.HookScript::script,
                 (v, newScript) -> v.update(a -> a.withScript(newScript))
-        ), new CC().grow());
+        ) {{
+            if(syntaxTheme == null)
+                syntaxTheme = new DarklafRSyntaxTheme();
+            syntaxTheme.apply(this);
+
+            setSyntaxEditingStyle(scriptEngine.getSyntaxStyle());
+            setCodeFoldingEnabled(true);
+        }}), new CC().grow());
     }
 }

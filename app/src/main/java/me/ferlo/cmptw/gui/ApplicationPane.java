@@ -131,7 +131,7 @@ class ApplicationPane extends JPanel {
         final var script = new ListenableValue<>(scriptIn);
         script.addListener((oldV, newV) -> applicationHook.update(a -> a.replaceScript(oldV, newV)));
 
-        final var tab = scriptsPane.insertTab(new ScriptTab(keyboardHookService, script), scriptsPane.getTabCount());
+        final var tab = scriptsPane.insertTab(new ScriptTab(keyboardHookService, scriptEngine, script), scriptsPane.getTabCount());
         tab.select();
     }
 }

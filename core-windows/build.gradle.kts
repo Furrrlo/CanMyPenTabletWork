@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":core"))
+    api(project(":core"))
 
     val jna = project.ext["jnaVersion"] as String
     api("net.java.dev.jna:jna-jpms:$jna")

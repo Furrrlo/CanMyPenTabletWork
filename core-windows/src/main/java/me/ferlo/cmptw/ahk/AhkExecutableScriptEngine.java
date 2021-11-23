@@ -1,8 +1,9 @@
 package me.ferlo.cmptw.ahk;
 
 import me.ferlo.cmptw.script.ExecutableScriptEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
+import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,9 +12,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 
 class AhkExecutableScriptEngine implements ExecutableScriptEngine {
+
+    private static final String SYNTAX_STYLE_AHK = "text/ahk";
 
     private final Path executable;
 
@@ -64,10 +66,21 @@ class AhkExecutableScriptEngine implements ExecutableScriptEngine {
     public String getNewScript() {
         return """
                 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
-                ; #Warn  ; Enable warnings to assist with detecting common errors.
+                #Warn  ; Enable warnings to assist with detecting common errors.
                 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
                 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
                 """;
+    }
+
+    @Override
+    public void createSyntaxStyle(AbstractTokenMakerFactory tokenMakerFactory, FoldParserManager foldParserManager) {
+        tokenMakerFactory.putMapping(SYNTAX_STYLE_AHK, AhkTokenMaker.class.getName());
+        foldParserManager.addFoldParserMapping(SYNTAX_STYLE_AHK, new CurlyFoldParser());
+    }
+
+    @Override
+    public String getSyntaxStyle() {
+        return SYNTAX_STYLE_AHK;
     }
 
     @Override

@@ -1,5 +1,9 @@
 package me.ferlo.cmptw.script;
 
+import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -20,4 +24,11 @@ public interface ScriptEngine {
     String getFileExtension();
 
     String getNewScript();
+
+    default void createSyntaxStyle(AbstractTokenMakerFactory tokenMakerFactory, FoldParserManager foldParserManager) {
+    }
+
+    default String getSyntaxStyle() {
+        return SyntaxConstants.SYNTAX_STYLE_NONE;
+    }
 }
