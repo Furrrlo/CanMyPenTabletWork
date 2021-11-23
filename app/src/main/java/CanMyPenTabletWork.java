@@ -67,18 +67,18 @@ public class CanMyPenTabletWork {
         }
     }
 
-    private static boolean hook(HookService hookService,
-                                ProcessService processService,
-                                ScriptEngine scriptEngine,
-                                KeyboardHookEvent event) {
+    private static KeyboardHookListener.ListenerResult hook(HookService hookService,
+                                                            ProcessService processService,
+                                                            ScriptEngine scriptEngine,
+                                                            KeyboardHookEvent event) {
         if(!event.isKeyDown())
-            return false;
+            return KeyboardHookListener.ListenerResult.CONTINUE;
 
         final Optional<Hook> maybeHook = hookService.getSaved().stream()
                 .filter(h -> h.device().id().equalsIgnoreCase(event.device().getId()))
                 .findFirst();
         if(maybeHook.isEmpty())
-            return false;
+            return KeyboardHookListener.ListenerResult.CONTINUE;
 
         final Hook hook = maybeHook.get();
         final Optional<Process> maybeProcess = processService.getProcessForPid(event.pid());
@@ -104,16 +104,16 @@ public class CanMyPenTabletWork {
             scriptEngine.execute(script.scriptFile());
         else
             scriptEngine.execute(script.script());
-        return true;
+        return KeyboardHookListener.ListenerResult.CANCEL;
     }
 
-    private static boolean fallbackBehavior(Hook hook) {
+    private static KeyboardHookListener.ListenerResult fallbackBehavior(Hook hook) {
         return switch (hook.fallbackBehavior()) {
-            case IGNORE -> false;
-            case DELETE -> true;
+            case IGNORE -> KeyboardHookListener.ListenerResult.CONTINUE;
+            case DELETE -> KeyboardHookListener.ListenerResult.CANCEL;
             case DELETE_AND_PLAY_SOUND -> {
                 Toolkit.getDefaultToolkit().beep();
-                yield true;
+                yield KeyboardHookListener.ListenerResult.CANCEL;
             }
         };
     }

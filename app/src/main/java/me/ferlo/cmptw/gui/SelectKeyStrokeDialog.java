@@ -1,7 +1,7 @@
 package me.ferlo.cmptw.gui;
 
-import me.ferlo.cmptw.hook.KeyboardHookDevice;
 import me.ferlo.cmptw.hook.KeyboardHookEvent;
+import me.ferlo.cmptw.hook.KeyboardHookListener;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -78,9 +78,9 @@ public class SelectKeyStrokeDialog extends JDialog {
 
         keyboardHookService.addListener((service, listener, event) -> {
             if(!isFocused())
-                return false;
+                return KeyboardHookListener.ListenerResult.CONTINUE;
             if(targetDeviceId != null && !event.device().getId().equals(targetDeviceId))
-                return false;
+                return KeyboardHookListener.ListenerResult.CONTINUE;
 
             final StringBuilder sb = new StringBuilder();
             if(event.modifiers() != 0)
@@ -98,13 +98,13 @@ public class SelectKeyStrokeDialog extends JDialog {
                 case KeyEvent.VK_CAPS_LOCK:
                 case KeyEvent.VK_SCROLL_LOCK:
                 case KeyEvent.VK_UNDEFINED:
-                    return false;
+                    return KeyboardHookListener.ListenerResult.CONTINUE;
             }
 
             eventFuture.complete(event);
             service.removeListener(listener);
             setVisible(false);
-            return true;
+            return KeyboardHookListener.ListenerResult.DELETE;
         });
     }
 

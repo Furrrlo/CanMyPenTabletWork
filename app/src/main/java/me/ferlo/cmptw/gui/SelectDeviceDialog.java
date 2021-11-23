@@ -1,6 +1,7 @@
 package me.ferlo.cmptw.gui;
 
 import me.ferlo.cmptw.hook.KeyboardHookDevice;
+import me.ferlo.cmptw.hook.KeyboardHookListener;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -66,12 +67,12 @@ public class SelectDeviceDialog extends JDialog {
 
         keyboardHookService.addListener((service, listener, event) -> {
             if(!isFocused())
-                return false;
+                return KeyboardHookListener.ListenerResult.CONTINUE;
 
             deviceFuture.complete(event.device());
             service.removeListener(listener);
             setVisible(false);
-            return true;
+            return KeyboardHookListener.ListenerResult.DELETE;
         });
     }
 
