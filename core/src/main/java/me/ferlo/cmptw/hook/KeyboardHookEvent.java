@@ -85,6 +85,21 @@ public record KeyboardHookEvent(
     public static int ALT_MASK = LALT_MASK | RALT_MASK;
 
     /**
+     * Returns whether or not the AltGraph modifier is down on this event.
+     * @return whether or not the AltGraph modifier is down on this event
+     */
+    public boolean isModifierKey() {
+        return switch (awtKeyCode) {
+            case KeyEvent.VK_SHIFT,
+                    KeyEvent.VK_CONTROL,
+                    KeyEvent.VK_ALT, KeyEvent.VK_ALT_GRAPH,
+                    KeyEvent.VK_META, KeyEvent.VK_NUM_LOCK,
+                    KeyEvent.VK_CAPS_LOCK, KeyEvent.VK_SCROLL_LOCK -> true;
+            default -> false;
+        };
+    }
+
+    /**
      * Returns whether or not the Shift modifier is down on this event.
      * @return whether or not the Shift modifier is down on this event
      */

@@ -90,18 +90,8 @@ public class SelectKeyStrokeDialog extends JDialog {
             sb.append(KeyEvent.getKeyText(event.awtKeyCode()));
             textLabel.setText(sb.toString());
 
-            switch (event.awtKeyCode()) {
-                case KeyEvent.VK_SHIFT:
-                case KeyEvent.VK_CONTROL:
-                case KeyEvent.VK_ALT:
-                case KeyEvent.VK_ALT_GRAPH:
-                case KeyEvent.VK_META:
-                case KeyEvent.VK_NUM_LOCK:
-                case KeyEvent.VK_CAPS_LOCK:
-                case KeyEvent.VK_SCROLL_LOCK:
-                case KeyEvent.VK_UNDEFINED:
-                    return KeyboardHookListener.ListenerResult.CONTINUE;
-            }
+            if(event.isModifierKey() || event.awtKeyCode() == KeyEvent.VK_UNDEFINED)
+                return KeyboardHookListener.ListenerResult.CONTINUE;
 
             eventFuture.complete(event);
             service.removeListener(listener);
