@@ -11,6 +11,16 @@ import java.nio.file.Path;
 
 public interface ScriptEngine {
 
+    boolean validate(String script, boolean canShowGui);
+
+    default boolean validate(Path script, boolean canShowGui) {
+        try {
+            return validate(Files.readString(script), canShowGui);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read string from script " + script, ex);
+        }
+    }
+
     void execute(String script);
 
     default void execute(Path script) {

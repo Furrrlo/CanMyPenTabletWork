@@ -1,7 +1,10 @@
 package me.ferlo.cmptw.gui;
 
+import com.github.weisj.darklaf.components.loading.LoadingIndicator;
 import com.github.weisj.darklaf.components.text.NumberedTextComponent;
 import com.github.weisj.darklaf.extensions.rsyntaxarea.DarklafRSyntaxTheme;
+import jiconfont.icons.font_awesome.FontAwesome;
+import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconFont;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookEvent;
 import me.ferlo.cmptw.hook.KeyboardHookService;
@@ -11,12 +14,26 @@ import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.Theme;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 public class ScriptPane extends JPanel {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptPane.class);
+    private static final ExecutorService VALIDATION_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        final Thread th = Executors.defaultThreadFactory().newThread(r);
+        th.setName("script-validation-thread");
+        th.setDaemon(true);
+        th.setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception in script validation thread", e));
+        return th;
+    });
     private static Theme syntaxTheme;
 
     private final KeyboardHookService keyboardHookService;
@@ -70,7 +87,41 @@ public class ScriptPane extends JPanel {
                         .withKeyStroke(new Hook.KeyStroke(keyboardEvt.awtKeyCode(), keyboardEvt.modifiers())))));
 
         add(infoPanel, new CC().growX());
-        add(new JLabel("Script: "));
+        add(new JLabel("Script: "), new CC().split(3).growX());
+
+        final LoadingIndicator validatingIndicator = new LoadingIndicator();
+        validatingIndicator.setEnabled(false);
+        add(validatingIndicator);
+
+        final Function<Boolean, ImageIcon> iconSupplier = valid -> new ImageIcon(new MultiResolutionIconFont(
+                FontAwesome.WRENCH, 14,
+                valid ? Color.GREEN.darker() : Color.RED.darker()));
+        final JButton validateBtn = new JButton(iconSupplier.apply(true));
+        validateBtn.setMargin(new Insets(2, 2, 2, 2));
+        validateBtn.setToolTipText("Validate");
+        validateBtn.addActionListener(evt -> {
+            validatingIndicator.setEnabled(true);
+            validatingIndicator.setRunning(true);
+            validateBtn.setEnabled(false);
+
+            VALIDATION_EXECUTOR.submit(() -> {
+                final Boolean[] valid = { null };
+                try {
+                    valid[0] = scriptEngine.validate(script.get().script(), true);
+                } finally {
+                    SwingUtilities.invokeLater(() -> {
+                        if(valid[0] != null)
+                            validateBtn.setIcon(iconSupplier.apply(valid[0]));
+
+                        validateBtn.setEnabled(true);
+                        validatingIndicator.setRunning(false);
+                        validatingIndicator.setEnabled(false);
+                    });
+                }
+            });
+        });
+        add(validateBtn);
+
         add(new NumberedTextComponent(new JListeningRSyntaxTextArea<>(
                 script,
                 Hook.HookScript::script,
