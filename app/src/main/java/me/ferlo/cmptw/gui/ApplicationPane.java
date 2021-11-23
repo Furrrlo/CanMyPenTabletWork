@@ -112,7 +112,7 @@ class ApplicationPane extends JPanel {
         removeScriptBtn = new JButton(new ImageIcon(new MultiResolutionIconFont(FontAwesome.MINUS, 14, new Color(150, 0, 0))));
         removeScriptBtn.setMargin(new Insets(2, 2, 2, 2));
         removeScriptBtn.setEnabled(scriptsPane.getSelectedIndex() >= 0);
-        scriptsPane.addChangeListener(evt -> removeScriptBtn.setEnabled(scriptsPane.getSelectedIndex() >= 0 && scriptsPane.getSelectedIndex() != scriptsPane.getTabCount() - 1));
+        scriptsPane.addChangeListener(evt -> removeScriptBtn.setEnabled(scriptsPane.getSelectedIndex() >= 0));
         removeScriptBtn.addActionListener(evt -> {
             final var tab = scriptsPane.getSelectedTab();
             tab.remove();
