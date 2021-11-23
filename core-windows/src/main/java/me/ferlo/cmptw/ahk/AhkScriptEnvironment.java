@@ -97,6 +97,7 @@ class AhkScriptEnvironment implements ExecutableScriptEnvironment {
         try {
             Files.writeString(tmpFile,
                     """
+                    #NoTrayIcon
                     str := "AHK version: " . A_AhkVersion
                     FileAppend, %str%, *
                     """);
@@ -121,8 +122,10 @@ class AhkScriptEnvironment implements ExecutableScriptEnvironment {
                 .redirectErrorStream(true)
                 .start();
 
-        if(!process.waitFor(2, TimeUnit.SECONDS))
+        if(!process.waitFor(2, TimeUnit.SECONDS)) {
+            process.destroyForcibly();
             throw new TimeoutException("Timeout expired for AHK executable " + binary.toAbsolutePath());
+        }
 
         final String version = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))
                 .lines()
