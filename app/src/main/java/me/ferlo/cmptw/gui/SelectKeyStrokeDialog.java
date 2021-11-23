@@ -77,6 +77,8 @@ public class SelectKeyStrokeDialog extends JDialog {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         keyboardHookService.addListener((service, listener, event) -> {
+            if(!event.isKeyDown())
+                return KeyboardHookListener.ListenerResult.CONTINUE;
             if(!isFocused())
                 return KeyboardHookListener.ListenerResult.CONTINUE;
             if(targetDeviceId != null && !event.device().getId().equals(targetDeviceId))
