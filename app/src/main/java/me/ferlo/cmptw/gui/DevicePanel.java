@@ -5,6 +5,7 @@ import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconFont;
 import me.ferlo.cmptw.gui.tabbed.JMyTabbedPane;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookService;
+import me.ferlo.cmptw.process.Process;
 import me.ferlo.cmptw.process.ProcessService;
 import me.ferlo.cmptw.script.ScriptEngine;
 import net.miginfocom.layout.AC;
@@ -89,12 +90,7 @@ public class DevicePanel extends JPanel {
                     if (process == null)
                         return;
 
-                    final Optional<Hook.ApplicationHook> maybeApplicationHook = applicationsPane.getTabs().stream()
-                            .filter(ApplicationTab.class::isInstance)
-                            .map(ApplicationTab.class::cast)
-                            .map(ApplicationTab::getApplicationHook)
-                            .filter(a -> a.application().process().equals(process.name()))
-                            .findFirst();
+                    final Optional<Hook.ApplicationHook> maybeApplicationHook = getApplicationHookFor(process);
                     if(maybeApplicationHook.isPresent()) {
                         JOptionPane.showMessageDialog(
                                 SwingUtilities.windowForComponent(this),
@@ -148,9 +144,23 @@ public class DevicePanel extends JPanel {
         applicationHook.addListener((oldV, newV) -> hook.update(h -> h.replaceApplicationHook(oldV, newV)));
 
         final var tab = applicationsPane.insertTab(
-                new ApplicationTab(keyboardHookService, scriptEngine, processService, applicationHook),
+                new ApplicationTab(
+                        keyboardHookService,
+                        scriptEngine,
+                        processService,
+                        this::getApplicationHookFor,
+                        applicationHook),
                 applicationsPane.getTabCount() - 1);
         tab.select();
+    }
+
+    private Optional<Hook.ApplicationHook> getApplicationHookFor(Process process) {
+        return applicationsPane.getTabs().stream()
+                .filter(ApplicationTab.class::isInstance)
+                .map(ApplicationTab.class::cast)
+                .map(ApplicationTab::getApplicationHook)
+                .filter(a -> a.application().process().equals(process.name()))
+                .findFirst();
     }
 
     private static String capitalize(String s) {

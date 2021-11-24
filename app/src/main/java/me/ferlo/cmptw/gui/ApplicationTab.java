@@ -3,11 +3,14 @@ package me.ferlo.cmptw.gui;
 import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconImage;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookService;
+import me.ferlo.cmptw.process.Process;
 import me.ferlo.cmptw.process.ProcessService;
 import me.ferlo.cmptw.script.ScriptEngine;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Optional;
+import java.util.function.Function;
 
 class ApplicationTab extends JTabbedPaneIconTab {
 
@@ -19,13 +22,15 @@ class ApplicationTab extends JTabbedPaneIconTab {
     public ApplicationTab(KeyboardHookService keyboardHookService,
                           ScriptEngine scriptEngine,
                           ProcessService processService,
+                          Function<Process, Optional<Hook.ApplicationHook>> getApplicationHookFor,
                           ListenableValue<Hook.ApplicationHook> applicationHook) {
-        this(keyboardHookService, scriptEngine, processService, applicationHook, new ListenableValue<>(applicationHook.get().application()));
+        this(keyboardHookService, scriptEngine, processService, getApplicationHookFor, applicationHook, new ListenableValue<>(applicationHook.get().application()));
     }
 
     private ApplicationTab(KeyboardHookService keyboardHookService,
                            ScriptEngine scriptEngine,
                            ProcessService processService,
+                           Function<Process, Optional<Hook.ApplicationHook>> getApplicationHookFor,
                            ListenableValue<Hook.ApplicationHook> applicationHook,
                            ListenableValue<Hook.Application> application) {
         super(
@@ -34,7 +39,7 @@ class ApplicationTab extends JTabbedPaneIconTab {
                         TAB_ICON_SIZE,
                         processService.extractProcessIcons(applicationHook.get().application().icon()))),
                 tabComponentFor(processService, applicationHook.get().application()),
-                new ApplicationPane(keyboardHookService, scriptEngine, application, applicationHook),
+                new ApplicationPane(keyboardHookService, scriptEngine, processService, getApplicationHookFor, application, applicationHook),
                 applicationHook.get().application().name()
         );
 

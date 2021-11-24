@@ -5,6 +5,8 @@ import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconFont;
 import me.ferlo.cmptw.gui.tabbed.JMyTabbedPane;
 import me.ferlo.cmptw.hook.Hook;
 import me.ferlo.cmptw.hook.KeyboardHookService;
+import me.ferlo.cmptw.process.Process;
+import me.ferlo.cmptw.process.ProcessService;
 import me.ferlo.cmptw.script.ScriptEngine;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
@@ -16,11 +18,14 @@ import java.awt.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 
 class ApplicationPane extends JPanel {
 
     private final KeyboardHookService keyboardHookService;
     private final ScriptEngine scriptEngine;
+    private final ProcessService processService;
 
     private final ListenableValue<Hook.Application> application;
     private final ListenableValue<Hook.ApplicationHook> applicationHook;
@@ -31,10 +36,13 @@ class ApplicationPane extends JPanel {
 
     public ApplicationPane(KeyboardHookService keyboardHookService,
                            ScriptEngine scriptEngine,
+                           ProcessService processService,
+                           Function<Process, Optional<Hook.ApplicationHook>> getApplicationHookFor,
                            ListenableValue<Hook.Application> application,
                            ListenableValue<Hook.ApplicationHook> applicationHook) {
         this.keyboardHookService = keyboardHookService;
         this.scriptEngine = scriptEngine;
+        this.processService = processService;
 
         this.application = application;
         this.applicationHook = applicationHook;
@@ -60,7 +68,30 @@ class ApplicationPane extends JPanel {
                 application,
                 Hook.Application::process,
                 (v, newProcess) -> v.update(a -> a.withProcess(newProcess))
-        ), new CC().growX());
+        ), new CC().growX().split(2));
+
+        final JButton selectProcessBtn = new JButton("...");
+        selectProcessBtn.addActionListener(evt -> SelectProcessDialog
+                .selectDevice(SwingUtilities.windowForComponent(this), processService)
+                .thenAccept(process -> SwingUtilities.invokeLater(() -> {
+                    if (process == null)
+                        return;
+
+                    final Optional<Hook.ApplicationHook> maybeApplicationHook = getApplicationHookFor.apply(process);
+                    if(maybeApplicationHook.isPresent()) {
+                        JOptionPane.showMessageDialog(
+                                SwingUtilities.windowForComponent(this),
+                                String.format("Process %s was already added as %s",
+                                        process.name(),
+                                        maybeApplicationHook.get().application().name()),
+                                "Warning",
+                                JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+
+                    application.update(app -> app.withProcess(process.name()));
+                })));
+        infoPanel.add(selectProcessBtn);
 
         infoPanel.add(new JLabel("Icon: "));
         infoPanel.add(new JListeningTextField<>(
