@@ -5,6 +5,7 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.WindowUtils;
 import com.sun.jna.platform.win32.*;
+import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinDef.HDC;
 import com.sun.jna.platform.win32.WinDef.HICON;
 import com.sun.jna.platform.win32.WinDef.HMODULE;
@@ -12,17 +13,24 @@ import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFOHEADER;
 import com.sun.jna.platform.win32.WinGDI.ICONINFO;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
+import com.sun.jna.platform.win32.WinNT.HRESULT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APITypeMapper;
+import me.ferlo.cmptw.process.Shell32.SHFILEINFO;
+import me.ferlo.cmptw.process.Shell32.SHSTOCKICONINFO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class WinProcessService implements ProcessService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WinProcessService.class);
 
     private static final Collection<String> PROCESS_EXTENSIONS = Collections.singleton("exe");
     private static final Collection<String> ICON_EXTENSIONS = List.of("exe", "ico");
@@ -45,10 +53,10 @@ public class WinProcessService implements ProcessService {
         while (size < 1024 * 10) {
             processes = new int[size];
             final IntByReference returnedProcessesInBytes = new IntByReference();
-            if(!Psapi.INSTANCE.EnumProcesses(processes, processes.length * WinDef.DWORD.SIZE, returnedProcessesInBytes))
+            if(!Psapi.INSTANCE.EnumProcesses(processes, processes.length * DWORD.SIZE, returnedProcessesInBytes))
                 throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
 
-            returnedProcesses = returnedProcessesInBytes.getValue() / WinDef.DWORD.SIZE;
+            returnedProcesses = returnedProcessesInBytes.getValue() / DWORD.SIZE;
             if(returnedProcesses > processes.length)
                 break;
 
@@ -69,41 +77,90 @@ public class WinProcessService implements ProcessService {
 
     @Override
     public List<BufferedImage> extractProcessIcons(Path processFile) {
-        final List<BufferedImage> icons = Arrays.stream(WIN32_ICO_SIZES)
-                .sequential()
-                .mapToObj(size -> {
-                    HICON[] hIcon = new HICON[1];
-                    int res = Shell32.INSTANCE.SHDefExtractIcon(
-                            processFile.toAbsolutePath().toString(),
-                            0, 0,
-                            hIcon, null, size);
-
-                    if(res != WinError.S_OK.intValue())
-                        return null;
-
-                    try {
-                        return convertToJavaImage(hIcon[0]);
-                    } finally {
-                        User32.INSTANCE.DestroyIcon(hIcon[0]);
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
-
+        final List<BufferedImage> icons = ShellDefExtractIconsFor(processFile.toAbsolutePath().toString(), 0);
         return !icons.isEmpty() ? icons : getFallbackIcons();
     }
 
     @Override
     public List<BufferedImage> getFallbackIcons() {
-        if(fallbackIcons == null)
-            // TODO: default win icon fallback?
-            fallbackIcons = List.of(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB_PRE));
+        if(fallbackIcons == null) {
+            SHFILEINFO sfi = null;
+            try {
+                // See https://stackoverflow.com/a/39378191
+                sfi = ShellGetFileInfo(
+                        // Filename is anything like "a.txt", "foo.xml", "x.zip"
+                        // The file doesn't have to exist, but it can't be an invalid  filename (e.g. "???.txt")
+                        "non_existing_exe.exe",
+                        WinNT.FILE_ATTRIBUTE_NORMAL,
+                        // SHGFI_IconLocation means get me the path and icon index
+                        // SHGFI_UseFileAttributes means the file doesn't have to exist
+                        Shell32.SHGFI_ICONLOCATION | Shell32.SHGFI_USEFILEATTRIBUTES);
+            } catch (Win32Exception ex) {
+                LOGGER.error("Failed to get exe default icon name and index", ex);
+            }
+
+            String iconLocation;
+            if(sfi != null && !(iconLocation = Native.toString(sfi.szDisplayName)).isEmpty()) {
+                fallbackIcons = ShellDefExtractIconsFor(iconLocation, sfi.iIcon);
+                if (fallbackIcons.isEmpty())
+                    LOGGER.error("Failed to get exe default icons (empty list)");
+            }
+
+            SHSTOCKICONINFO ssii = null;
+            try {
+                ssii = ShellGetStockIconInfo(Shell32.SHSTOCKICONID.SIID_APPLICATION, Shell32.SHGSI_ICONLOCATION);
+            } catch (UnsatisfiedLinkError ex) {
+                LOGGER.warn("ShellGetStockIconInfo is only supported starting from Windows Vista", ex);
+            } catch (Win32Exception ex) {
+                LOGGER.error("Failed to get stock exe icon name and index", ex);
+            }
+
+            if(ssii != null && !(iconLocation = Native.toString(ssii.szDisplayName)).isEmpty()) {
+                fallbackIcons = ShellDefExtractIconsFor(iconLocation, ssii.iIcon);
+                if (fallbackIcons.isEmpty())
+                    LOGGER.error("Failed to get exe stock icons (empty list)");
+            }
+
+            if (fallbackIcons == null || fallbackIcons.isEmpty())
+                fallbackIcons = List.of(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB_PRE));
+        }
+
         return fallbackIcons;
     }
 
     @Override
     public Collection<String> getIconExtensions() {
         return ICON_EXTENSIONS;
+    }
+
+    private List<BufferedImage> ShellDefExtractIconsFor(String pszIconFile, int iIndex) {
+        return Arrays.stream(WIN32_ICO_SIZES)
+                .sequential()
+                .mapToObj(size -> ShellDefExtractIconOrNull(pszIconFile, iIndex, 0, size))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private BufferedImage ShellDefExtractIconOrNull(String pszIconFile, int iIndex, int uFlags, int size) {
+        try {
+            return ShellDefExtractIcon(pszIconFile, iIndex, uFlags, size);
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    private BufferedImage ShellDefExtractIcon(String pszIconFile, int iIndex, int uFlags, int size) {
+        final HICON[] hIcon = new HICON[1];
+        int res0 = Shell32.INSTANCE.SHDefExtractIcon(pszIconFile, iIndex, uFlags, hIcon, null, size);
+
+        if(res0 != WinError.S_OK.intValue())
+            throw new RuntimeException("SHDefExtractIcon returned " + res0);
+
+        try {
+            return convertToJavaImage(hIcon[0]);
+        } finally {
+            User32.INSTANCE.DestroyIcon(hIcon[0]);
+        }
     }
 
     /**
@@ -175,6 +232,39 @@ public class WinProcessService implements ProcessService {
 
         User32.INSTANCE.ReleaseDC(null, hDC);
         return image;
+    }
+
+    private SHFILEINFO ShellGetFileInfo(String pszPath, int dwFileAttributes, int uFlags) {
+        final HRESULT res = Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED);
+        if(!Objects.equals(res, WinError.S_OK))
+            throw new Win32Exception(res);
+
+        try {
+            SHFILEINFO sfi = new SHFILEINFO();
+            int res0 = Shell32.INSTANCE.SHGetFileInfo(pszPath, dwFileAttributes, sfi, sfi.size(), uFlags);
+            if (res0 == 0)
+                throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+            return sfi;
+        } finally {
+            Ole32.INSTANCE.CoUninitialize();
+        }
+    }
+
+    private SHSTOCKICONINFO ShellGetStockIconInfo(int siid, int uFlags) {
+        HRESULT res = Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED);
+        if(!Objects.equals(res, WinError.S_OK))
+            throw new Win32Exception(res);
+
+        try {
+            SHSTOCKICONINFO ssii = new SHSTOCKICONINFO();
+            ssii.cbSize = new DWORD(ssii.size());
+            res = Shell32.INSTANCE.SHGetStockIconInfo(siid, uFlags, ssii);
+            if(!Objects.equals(res, WinError.S_OK))
+                throw new Win32Exception(res);
+            return ssii;
+        } finally {
+            Ole32.INSTANCE.CoUninitialize();
+        }
     }
 
     private Process createWinProcess(int pid) {
