@@ -12,6 +12,7 @@ import me.ferlo.cmptw.script.ScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
 import java.awt.*;
 
 public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService, ThemePreferenceListener {
@@ -56,8 +57,12 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
     }
 
     public void showGui() {
-        if(gui != null)
+        if(gui != null) {
+            gui.setExtendedState(gui.getExtendedState() & ~JFrame.ICONIFIED);
+            gui.toFront();
+            gui.requestFocus();
             return;
+        }
 
         gui = new Gui(hookService, keyboardHookService, scriptEngine, processService, getToolTip(), getImage());
         gui.setVisible(true);
