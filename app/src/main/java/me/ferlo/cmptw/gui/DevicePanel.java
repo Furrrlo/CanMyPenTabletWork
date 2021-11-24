@@ -85,7 +85,7 @@ public class DevicePanel extends JPanel {
         addApplicationBtn = new JButton(new ImageIcon(new MultiResolutionIconFont(FontAwesome.PLUS, 14, new Color(0, 150, 0))));
         addApplicationBtn.setMargin(new Insets(2, 2, 2, 2));
         addApplicationBtn.addActionListener(evt -> SelectProcessDialog
-                .selectDevice(SwingUtilities.windowForComponent(this), processService)
+                .selectDevice(SwingUtilities.windowForComponent(this), processService, true)
                 .thenAccept(process -> SwingUtilities.invokeLater(() -> {
                     if (process == null)
                         return;

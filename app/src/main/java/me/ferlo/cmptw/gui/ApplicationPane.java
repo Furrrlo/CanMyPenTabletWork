@@ -72,7 +72,7 @@ class ApplicationPane extends JPanel {
 
         final JButton selectProcessBtn = new JButton("...");
         selectProcessBtn.addActionListener(evt -> SelectProcessDialog
-                .selectDevice(SwingUtilities.windowForComponent(this), processService)
+                .selectDevice(SwingUtilities.windowForComponent(this), processService, true)
                 .thenAccept(process -> SwingUtilities.invokeLater(() -> {
                     if (process == null)
                         return;

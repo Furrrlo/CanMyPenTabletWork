@@ -14,10 +14,13 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class SelectProcessDialog extends JDialog {
 
@@ -39,41 +42,45 @@ public class SelectProcessDialog extends JDialog {
     private final CompletableFuture<Process> future;
 
     public SelectProcessDialog(ProcessService processService,
-                               CompletableFuture<Process> future) {
+                               CompletableFuture<Process> future,
+                               boolean processInfo) {
         super(null, ModalityType.APPLICATION_MODAL);
         this.processService = processService;
         this.future = future;
-        init();
+        init(processInfo);
     }
 
     private SelectProcessDialog(Frame owner,
                                 ProcessService processService,
-                                CompletableFuture<Process> future) {
+                                CompletableFuture<Process> future,
+                                boolean processInfo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.processService = processService;
         this.future = future;
-        init();
+        init(processInfo);
     }
 
     public SelectProcessDialog(Dialog owner,
                                ProcessService processService,
-                               CompletableFuture<Process> future) {
+                               CompletableFuture<Process> future,
+                               boolean processInfo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.processService = processService;
         this.future = future;
-        init();
+        init(processInfo);
     }
 
     public SelectProcessDialog(Window owner,
                                ProcessService processService,
-                               CompletableFuture<Process> future) {
+                               CompletableFuture<Process> future,
+                               boolean processInfo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.processService = processService;
         this.future = future;
-        init();
+        init(processInfo);
     }
 
-    private void init() {
+    private void init(boolean processInfo) {
         setTitle("Select Process");
 
         final JPanel contentPane = new JPanel();
@@ -157,6 +164,23 @@ public class SelectProcessDialog extends JDialog {
         final JPanel buttonsPanel = new JPanel();
         buttonsPanel.setLayout(new MigLayout(new LC().insetsAll("0").fillX()));
 
+        final JButton browseBtn;
+        if(!processInfo) {
+            browseBtn = null;
+        } else {
+            browseBtn = new JButton("Browse");
+            browseBtn.addActionListener(evt -> {
+                final var chooser = new JFileChooser();
+                final var res = chooser.showOpenDialog(this);
+                if (res != JFileChooser.APPROVE_OPTION)
+                    return;
+
+                final var process = new FileBasedProcess(chooser.getSelectedFile().getAbsoluteFile().toPath());
+                future.complete(process);
+                setVisible(false);
+            });
+        }
+
         final JButton cancelBtn = new JButton("Cancel");
         cancelBtn.addActionListener(evt -> {
             future.complete(null);
@@ -176,8 +200,10 @@ public class SelectProcessDialog extends JDialog {
             setVisible(false);
         });
 
-        buttonsPanel.add(cancelBtn, new CC().tag("cancel").split(2));
+        buttonsPanel.add(cancelBtn, new CC().tag("cancel").split(browseBtn == null ? 2 : 3));
         buttonsPanel.add(addBtn, new CC().tag("apply"));
+        if(browseBtn != null)
+            buttonsPanel.add(browseBtn);
         getRootPane().setDefaultButton(addBtn);
 
         contentPane.add(buttonsPanel, new CC().growX());
@@ -198,29 +224,66 @@ public class SelectProcessDialog extends JDialog {
     }
 
     public static CompletableFuture<Process> selectDevice(ProcessService processService) {
+        return selectDevice(processService, false);
+    }
+
+    public static CompletableFuture<Process> selectDevice(ProcessService processService, boolean processInfo) {
         final var future = new CompletableFuture<Process>();
-        new SelectProcessDialog(processService, future).setVisible(true);
+        new SelectProcessDialog(processService, future, processInfo).setVisible(true);
         return future;
+    }
+
+    public static CompletableFuture<Process> selectDevice(Frame owner, ProcessService processService) {
+        return selectDevice(owner, processService, false);
     }
 
     public static CompletableFuture<Process> selectDevice(Frame owner,
-                                                          ProcessService processService) {
+                                                          ProcessService processService,
+                                                          boolean processInfo) {
         final var future = new CompletableFuture<Process>();
-        new SelectProcessDialog(owner, processService, future).setVisible(true);
+        new SelectProcessDialog(owner, processService, future, processInfo).setVisible(true);
         return future;
+    }
+
+    public static CompletableFuture<Process> selectDevice(Dialog owner, ProcessService processService) {
+        return selectDevice(owner, processService, false);
     }
 
     public static CompletableFuture<Process> selectDevice(Dialog owner,
-                                                          ProcessService processService) {
+                                                          ProcessService processService,
+                                                          boolean processInfo) {
         final var future = new CompletableFuture<Process>();
-        new SelectProcessDialog(owner, processService, future).setVisible(true);
+        new SelectProcessDialog(owner, processService, future, processInfo).setVisible(true);
         return future;
     }
 
+    public static CompletableFuture<Process> selectDevice(Window owner, ProcessService processService) {
+        return selectDevice(owner, processService, false);
+    }
+
     public static CompletableFuture<Process> selectDevice(Window owner,
-                                                          ProcessService processService) {
+                                                          ProcessService processService,
+                                                          boolean processInfo) {
         final var future = new CompletableFuture<Process>();
-        new SelectProcessDialog(owner, processService, future).setVisible(true);
+        new SelectProcessDialog(owner, processService, future, processInfo).setVisible(true);
         return future;
+    }
+
+    private static record FileBasedProcess(Path processFile) implements Process {
+
+        @Override
+        public int pid() {
+            return -1;
+        }
+
+        @Override
+        public String name() {
+            return processFile.getFileName().toString();
+        }
+
+        @Override
+        public Path iconPath() {
+            return processFile;
+        }
     }
 }
