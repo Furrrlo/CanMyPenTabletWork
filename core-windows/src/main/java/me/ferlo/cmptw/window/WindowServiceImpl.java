@@ -178,7 +178,7 @@ class WindowServiceImpl implements WindowService {
         final CompletableFuture<T> future = new CompletableFuture<>();
         toRunOnPumpThread.add(callable);
         toRunOnPumpThreadToFuture.put(callable, future);
-        USER32.PostMessage(hWnd, WM_STOP_EVENT_PUMP, null, null);
+        USER32.PostMessage(hWnd, WM_EXECUTE_ON_PUMP_THREAD, null, null);
         return future;
     }
 

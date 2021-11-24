@@ -35,10 +35,18 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
             if(registered)
                 return;
 
-            if(!GlobalKeyboardHook.INSTANCE.StartHook(windowService.getHwnd()))
-                throw new GlobalKeyboardHookException(
-                        "Failed to register GlobalKeyboardHookServiceImpl",
-                        new Win32Exception(Kernel32.INSTANCE.GetLastError()));
+            /*
+             * This hook may be called in the context of the thread that installed it.
+             * The call is made by sending a message to the thread that installed the hook.
+             * Therefore, the thread that installed the hook must have a message loop.
+             */
+            windowService.runOnPumpThread(() -> {
+                if(!GlobalKeyboardHook.INSTANCE.StartHook(windowService.getHwnd()))
+                    throw new GlobalKeyboardHookException(
+                            "Failed to register GlobalKeyboardHookServiceImpl",
+                            new Win32Exception(Kernel32.INSTANCE.GetLastError()));
+            }).get();
+
             windowService.addListener(WH_HOOK_ACTION, this::wndProc);
             windowService.addListener(WH_HOOK_NOREMOVE, this::wndProc);
             registered = true;
