@@ -19,6 +19,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.nio.file.Paths;
 import java.util.Optional;
 
@@ -71,8 +72,6 @@ public class CanMyPenTabletWork {
                                                             ProcessService processService,
                                                             ScriptEngine scriptEngine,
                                                             KeyboardHookEvent event) {
-        if(!event.isKeyDown())
-            return KeyboardHookListener.ListenerResult.CONTINUE;
 
         final Optional<Hook> maybeHook = hookService.getSaved().stream()
                 .filter(h -> h.device().id().equalsIgnoreCase(event.device().getId()))
@@ -100,10 +99,13 @@ public class CanMyPenTabletWork {
             return fallbackBehavior(event, hook);
 
         final Hook.HookScript script = maybeScript.get();
-        if(script.scriptFile() != null)
-            scriptEngine.execute(script.scriptFile());
-        else
-            scriptEngine.execute(script.script());
+        if(event.isKeyDown()) {
+            if(script.scriptFile() != null)
+                scriptEngine.execute(script.scriptFile());
+            else
+                scriptEngine.execute(script.script());
+        }
+
         return KeyboardHookListener.ListenerResult.CANCEL;
     }
 
@@ -112,7 +114,7 @@ public class CanMyPenTabletWork {
             case IGNORE -> KeyboardHookListener.ListenerResult.CONTINUE;
             case DELETE -> KeyboardHookListener.ListenerResult.CANCEL;
             case DELETE_AND_PLAY_SOUND -> {
-                if(!event.isModifierKey() && event.awtKeyCode() != KeyEvent.VK_UNDEFINED)
+                if(event.isKeyDown() && !event.isModifierKey() && event.awtKeyCode() != KeyEvent.VK_UNDEFINED)
                     Toolkit.getDefaultToolkit().beep();
                 yield KeyboardHookListener.ListenerResult.CANCEL;
             }
