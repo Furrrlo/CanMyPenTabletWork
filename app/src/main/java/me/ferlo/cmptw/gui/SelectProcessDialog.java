@@ -86,11 +86,15 @@ public class SelectProcessDialog extends JDialog {
         final JPanel contentPane = new JPanel();
         contentPane.setLayout(new MigLayout(new LC().fill().flowY().align("center", "center")));
 
-        final List<Process> processes = processService.enumerateProcesses().stream()
-//                .collect(Collectors.toMap(Process::iconPath, Function.identity(), (e1, e2) -> e1))
-//                .values().stream()
-                .sorted(Comparator.comparing(Process::name))
-                .toList();
+        final List<Process> processes = processInfo ?
+                processService.enumerateProcesses().stream()
+                        .collect(Collectors.toMap(Process::iconPath, Function.identity(), (e1, e2) -> e1))
+                        .values().stream()
+                        .sorted(Comparator.comparing(Process::name))
+                        .toList() :
+                processService.enumerateProcesses().stream()
+                        .sorted(Comparator.comparing(Process::name))
+                        .toList();
 
         final JXTable processTable = new JXTable();
         processTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
@@ -105,8 +109,12 @@ public class SelectProcessDialog extends JDialog {
         final AbstractTableModel processTableModel;
         processTable.setModel(processTableModel = new AbstractTableModel() {
 
-            private static final String[] COLUMN_NAMES = { "PID", "Icon", "Name", "File" };
-            private static final Class<?>[] COLUMN_CLASSES = { int.class, ImageIcon.class, String.class, String.class };
+            private final String[] columnNames = !processInfo ?
+                    new String[] { "PID", "Icon", "Name", "File" } :
+                    new String[] { "Icon", "Name", "File" };
+            private final Class<?>[] columnClasses = !processInfo ?
+                    new Class<?>[] { int.class, ImageIcon.class, String.class, String.class } :
+                    new Class<?>[] { ImageIcon.class, String.class, String.class };
 
             private final ConcurrentMap<Process, ImageIcon> processIcons = new ConcurrentHashMap<>();
 
@@ -117,24 +125,27 @@ public class SelectProcessDialog extends JDialog {
 
             @Override
             public int getColumnCount() {
-                return COLUMN_NAMES.length;
+                return columnNames.length;
             }
 
             @Override
             public String getColumnName(int column) {
-                return COLUMN_NAMES[column];
+                return columnNames[column];
             }
 
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                return COLUMN_CLASSES[columnIndex];
+                return columnClasses[columnIndex];
             }
 
             @Override
             public Object getValueAt(int rowIndex, int columnIndex) {
                 final Process process = processes.get(rowIndex);
-                return switch (columnIndex) {
-                    case -1 -> process;
+                // Special case, this is requested by addBtn to get the actual Process
+                if(columnIndex == -1)
+                    return process;
+                // If processInfo is true, we don't have the first column, everything gets shifted to the right by 1
+                return switch (columnIndex + (!processInfo ? 0 : 1)) {
                     case 0 -> process.pid();
                     case 1 -> processIcons.computeIfAbsent(process, p -> {
                         // Schedule its loading
@@ -153,7 +164,7 @@ public class SelectProcessDialog extends JDialog {
                     });
                     case 2 -> process.name();
                     case 3 -> process.iconPath().toAbsolutePath().toString();
-                    default -> throw new IndexOutOfBoundsException("Index: " + columnIndex + ", size: " + COLUMN_NAMES.length);
+                    default -> throw new IndexOutOfBoundsException("Index: " + columnIndex + ", size: " + columnNames.length);
                 };
             }
         });
