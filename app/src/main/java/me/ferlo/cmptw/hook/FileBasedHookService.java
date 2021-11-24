@@ -10,13 +10,16 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class FileBasedHookService implements HookService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedHookService.class);
+    private static final String HOOK_JSON_FILE_NAME = "hook.json";
     static final String UTF_8_BOM = "\ufeff";
 
     private final ScriptEngine scriptEngine;
@@ -78,7 +81,7 @@ public class FileBasedHookService implements HookService {
                 hook = hook.replaceApplicationHook(startAppHook, appHook);
             }
 
-            try(Writer writer = Files.newBufferedWriter(hook.folder().resolve("hook.json"), StandardCharsets.UTF_8)) {
+            try(Writer writer = Files.newBufferedWriter(hook.folder().resolve(HOOK_JSON_FILE_NAME), StandardCharsets.UTF_8)) {
                 gson.toJson(hook, writer);
             } catch (JsonIOException ex) {
                 throw new IOException("Failed to serialize hook " + hook, ex);
@@ -96,7 +99,7 @@ public class FileBasedHookService implements HookService {
 
         for (Iterator<Path> iterator = Files.list(rootFolder).iterator(); iterator.hasNext(); ) {
             final Path hookFolder = iterator.next();
-            final Path hookJson = hookFolder.resolve("hook.json");
+            final Path hookJson = hookFolder.resolve(HOOK_JSON_FILE_NAME);
             if(!Files.exists(hookJson) || Files.isDirectory(hookJson))
                 continue;
 
@@ -113,46 +116,55 @@ public class FileBasedHookService implements HookService {
     }
 
     private void tryCleaningRootDir() {
+        for (var hook : saved) {
+            final Path hookFolder = hook.folder();
+            final String generatedHookFolderName = sanitizePathSegment(hook.device().id());
+
+            for (var appHook : hook.applicationHooks()) {
+                final Path appHookFolder = appHook.folder();
+                final String generatedAppHookFolderName = sanitizePathSegment(appHook.application().process());
+
+                for (var script : appHook.scripts()) {
+                    final Path scriptFile = script.scriptFile();
+                    final String generatedScriptFileName = sanitizePathSegment(script.name());
+
+                    if (scriptFile.getParent() != null &&
+                            startsWith(scriptFile.getParent().getParent(), rootFolder, generatedHookFolderName) &&
+                            nameStartsWith(scriptFile.getParent(), generatedAppHookFolderName) &&
+                            nameStartsWith(scriptFile, generatedScriptFileName) &&
+                            nameEndsWith(scriptFile, '.' + scriptEngine.getFileExtension())) {
+                        try {
+                            Files.deleteIfExists(scriptFile);
+                        } catch (IOException ex) {
+                            LOGGER.error("Failed to delete file {}", scriptFile.toAbsolutePath(), ex);
+                        }
+                    }
+                }
+
+                if (startsWith(appHookFolder.getParent(), rootFolder, generatedHookFolderName) &&
+                        nameStartsWith(appHookFolder, generatedAppHookFolderName))
+                    deleteFolderIfEmptyOrLog(appHookFolder);
+            }
+
+            final Path hookJson = hookFolder.resolve(HOOK_JSON_FILE_NAME);
+            try {
+                Files.deleteIfExists(hookJson);
+            } catch (IOException ex) {
+                LOGGER.error("Failed to delete file {}", hookJson.toAbsolutePath(), ex);
+            }
+
+            if (startsWith(hookFolder, rootFolder, sanitizePathSegment(hook.device().id())))
+                deleteFolderIfEmptyOrLog(hookFolder);
+        }
+    }
+
+    private void deleteFolderIfEmptyOrLog(Path path) {
         try {
-            Files.walkFileTree(rootFolder, new FileVisitor<>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (file != null) {
-                        try {
-                            Files.deleteIfExists(file);
-                        } catch (IOException ex) {
-                            LOGGER.error("Failed to delete file {}", file.toAbsolutePath(), ex);
-                        }
-                    }
-
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                    if (dir != null) {
-                        try {
-                            Files.deleteIfExists(dir);
-                        } catch (IOException ex) {
-                            LOGGER.error("Failed to delete file {}", dir.toAbsolutePath(), ex);
-                        }
-                    }
-
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            Files.deleteIfExists(path);
+        } catch (DirectoryNotEmptyException ex) {
+            // Ignored
         } catch (IOException ex) {
-            LOGGER.error("Failed to clean root dir {}", rootFolder.toAbsolutePath(), ex);
+            LOGGER.error("Failed to delete folder {}", path.toAbsolutePath(), ex);
         }
     }
 
@@ -190,5 +202,17 @@ public class FileBasedHookService implements HookService {
     private static String sanitizePathSegment(String segment) {
         // Make it safe, replace anything that isn't basic characters
         return segment.replaceAll("[^a-zA-Z0-9 \\-_\\#.]", "");
+    }
+
+    private static boolean startsWith(Path path, Path parent, String name) {
+        return path != null && path.getParent().equals(parent) && nameStartsWith(path, name);
+    }
+
+    private static boolean nameStartsWith(Path path, String name) {
+        return path != null && path.getFileName().toString().startsWith(name);
+    }
+
+    private static boolean nameEndsWith(Path path, String name) {
+        return path != null && path.getFileName().toString().endsWith(name);
     }
 }
