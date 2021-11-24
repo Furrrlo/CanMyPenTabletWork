@@ -2,10 +2,8 @@ package me.ferlo.cmptw.hook;
 
 import com.google.gson.*;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -143,8 +141,8 @@ class HookGsonSerializer implements JsonSerializer<Hook>, JsonDeserializer<Hook>
             final Path scriptFile = Paths.get(obj.getAsJsonPrimitive("script").getAsString());
 
             String scriptContent;
-            try(BufferedReader reader = Files.newBufferedReader(scriptFile, StandardCharsets.UTF_8)) {
-                scriptContent = reader.lines().collect(Collectors.joining("\n"));
+            try {
+                scriptContent = Files.readString(scriptFile);
                 // Remove the BOM if present
                 if(scriptContent.startsWith(UTF_8_BOM))
                     scriptContent = scriptContent.substring(UTF_8_BOM.length());
