@@ -6,8 +6,7 @@ import me.ferlo.cmptw.raw.RawInputException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static com.sun.jna.platform.win32.User32.*;
@@ -23,6 +22,7 @@ class WindowServiceImpl implements WindowService {
     private static final int PM_NOYIELD = 0x0002;
 
     private static final int WM_STOP_EVENT_PUMP = WM_USER + 1;
+    private static final int WM_EXECUTE_ON_PUMP_THREAD = WM_USER + 2;
 
     private final ExecutorService pumpExecutor = Executors.newSingleThreadExecutor(r -> {
         final var th = Executors.defaultThreadFactory().newThread(r);
@@ -35,6 +35,8 @@ class WindowServiceImpl implements WindowService {
 
     private volatile boolean registered;
     private final ConcurrentMap<Integer, WindowMessageListener> listeners = new ConcurrentHashMap<>();
+    private final Queue<Callable<?>> toRunOnPumpThread = new ConcurrentLinkedQueue<>();
+    private final ConcurrentMap<Callable<?>, CompletableFuture<?>> toRunOnPumpThreadToFuture = new ConcurrentHashMap<>();
 
     private HMODULE hInst;
     private WNDCLASSEX wndCls;
@@ -163,6 +165,23 @@ class WindowServiceImpl implements WindowService {
         listeners.remove(uMsg, listener);
     }
 
+    @Override
+    public CompletableFuture<Void> runOnPumpThread(Runnable runnable) {
+        return callOnPumpThread(() -> {
+            runnable.run();
+            return null;
+        });
+    }
+
+    @Override
+    public <T> CompletableFuture<T> callOnPumpThread(Callable<T> callable) {
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        toRunOnPumpThread.add(callable);
+        toRunOnPumpThreadToFuture.put(callable, future);
+        USER32.PostMessage(hWnd, WM_STOP_EVENT_PUMP, null, null);
+        return future;
+    }
+
     private void pumpEvents() {
         while (USER32.GetMessage(msg, hWnd, 0, 0) > 0) {
             USER32.TranslateMessage(msg);
@@ -187,6 +206,21 @@ class WindowServiceImpl implements WindowService {
         try {
             if(uMsg == WM_STOP_EVENT_PUMP) {
                 USER32.PostQuitMessage(0);
+                return new LRESULT(0);
+            }
+
+            if(uMsg == WM_EXECUTE_ON_PUMP_THREAD) {
+                final Callable<?> callable = toRunOnPumpThread.remove();
+                final CompletableFuture<?> future = Objects.requireNonNull(toRunOnPumpThreadToFuture.remove(callable));
+
+                try {
+                    // Type is guaranteed to be correct
+                    //noinspection ALL
+                    ((CompletableFuture) future).complete(callable.call());
+                } catch (Throwable t) {
+                    future.completeExceptionally(t);
+                }
+
                 return new LRESULT(0);
             }
 
