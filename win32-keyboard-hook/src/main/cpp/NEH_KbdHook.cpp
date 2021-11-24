@@ -46,16 +46,16 @@ static LRESULT CALLBACK HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 		LRESULT success = SendMessageTimeout(callback_reciever, WM_HOOK + nCode, wParam, lParam, SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT, 100, &blockKey);
 		if(success)
 		{
-			return blockKey;
+			return blockKey ? 1 : CallNextHookEx(kbHook, nCode, wParam, lParam);
 		}
 
 		if(GetLastError() == ERROR_INVALID_WINDOW_HANDLE)
 		{
 		    StopHook();
-		    return 0;
+		    return CallNextHookEx(kbHook, nCode, wParam, lParam);
 		}
 
-        return 0;
+        return CallNextHookEx(kbHook, nCode, wParam, lParam);
 	}
 	return CallNextHookEx(kbHook, nCode, wParam, lParam);
 }
