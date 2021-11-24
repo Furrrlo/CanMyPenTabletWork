@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static com.sun.jna.platform.win32.User32.*;
+import static me.ferlo.cmptw.util.Futures.waitFutureAndPropagateException;
 
 class WindowServiceImpl implements WindowService {
 
@@ -93,7 +94,7 @@ class WindowServiceImpl implements WindowService {
                 pumpEvents();
             });
 
-            waitFutureAndPropagateException(startupFuture, "Failed to wait for startup");
+            waitFutureAndPropagateException(startupFuture, ex -> new WindowException("Failed to wait for startup", ex));
         }
     }
 
@@ -131,7 +132,7 @@ class WindowServiceImpl implements WindowService {
                     exceptions.forEach(ex::addSuppressed);
                     throw ex;
                 }
-            }), "Failed to wait for shutdown");
+            }), ex -> new WindowException("Failed to wait for shutdown", ex));
         }
     }
 
@@ -231,25 +232,5 @@ class WindowServiceImpl implements WindowService {
         }
 
         return USER32.DefWindowProc(hwnd, uMsg, wParam, lParam);
-    }
-
-    private static <T> T waitFutureAndPropagateException(Future<T> future, String exception) throws WindowException {
-        try {
-            return future.get();
-        } catch (InterruptedException e) {
-            throw new WindowException(exception, e);
-        } catch (ExecutionException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof Error || cause instanceof RuntimeException) {
-                // Add this thread stacktrace to the exception
-                cause.addSuppressed(new Exception("Called from here"));
-
-                if (cause instanceof Error)
-                    throw (Error) cause;
-                // if(cause instanceof RuntimeException)
-                throw (RuntimeException) cause;
-            }
-            throw new WindowException(exception, cause != null ? cause : e);
-        }
     }
 }

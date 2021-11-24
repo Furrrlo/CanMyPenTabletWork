@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static me.ferlo.cmptw.global.GlobalKeyboardHook.*;
+import static me.ferlo.cmptw.util.Futures.waitFutureAndPropagateException;
 
 class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
 
@@ -40,12 +41,12 @@ class GlobalKeyboardHookServiceImpl implements GlobalKeyboardHookService {
              * The call is made by sending a message to the thread that installed the hook.
              * Therefore, the thread that installed the hook must have a message loop.
              */
-            windowService.runOnPumpThread(() -> {
+            waitFutureAndPropagateException(windowService.runOnPumpThread(() -> {
                 if(!GlobalKeyboardHook.INSTANCE.StartHook(windowService.getHwnd()))
                     throw new GlobalKeyboardHookException(
-                            "Failed to register GlobalKeyboardHookServiceImpl",
+                            "Failed to register GlobalKeyboardHook",
                             new Win32Exception(Kernel32.INSTANCE.GetLastError()));
-            }).get();
+            }), ex -> new Exception("Failed to register GlobalKeyboardHookServiceImpl", ex));
 
             windowService.addListener(WH_HOOK_ACTION, this::wndProc);
             windowService.addListener(WH_HOOK_NOREMOVE, this::wndProc);
