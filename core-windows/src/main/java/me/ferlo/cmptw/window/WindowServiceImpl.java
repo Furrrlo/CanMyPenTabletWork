@@ -26,7 +26,7 @@ class WindowServiceImpl implements WindowService {
 
     private final ExecutorService pumpExecutor = Executors.newSingleThreadExecutor(r -> {
         final var th = Executors.defaultThreadFactory().newThread(r);
-        th.setName("RawKeyboardInputServiceImpl-message-pump");
+        th.setName("WindowServiceImpl@" + hashCode() + "-message-pump");
         th.setDaemon(true);
         th.setUncaughtExceptionHandler((t, e) -> LOGGER.error("Thread '{}' crashed: ", t.getName(), e));
         return th;
@@ -67,7 +67,7 @@ class WindowServiceImpl implements WindowService {
 
                     wndCls = new WNDCLASSEX();
                     wndCls.hInstance = hInst;
-                    wndCls.lpszClassName = "RawKeyboardInputServiceImpl";
+                    wndCls.lpszClassName = "WindowServiceImpl@" + hashCode();
                     wndCls.lpfnWndProc = (WindowProc) this::wndProc;
 
                     if (USER32.RegisterClassEx(wndCls).intValue() == 0)
