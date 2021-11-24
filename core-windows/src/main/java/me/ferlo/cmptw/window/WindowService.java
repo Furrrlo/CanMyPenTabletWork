@@ -1,7 +1,6 @@
 package me.ferlo.cmptw.window;
 
 import com.sun.jna.platform.win32.WinDef.HWND;
-import me.ferlo.cmptw.raw.RawInputException;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -12,9 +11,9 @@ public interface WindowService {
         return new WindowServiceImpl();
     }
 
-    void register() throws RawInputException;
+    void register() throws WindowException;
 
-    void unregister() throws RawInputException;
+    void unregister() throws WindowException;
 
     HWND getHwnd();
 

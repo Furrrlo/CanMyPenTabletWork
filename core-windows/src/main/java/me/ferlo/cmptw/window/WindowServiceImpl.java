@@ -2,7 +2,6 @@ package me.ferlo.cmptw.window;
 
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.User32;
-import me.ferlo.cmptw.raw.RawInputException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,7 @@ class WindowServiceImpl implements WindowService {
     private Future<?> pumpEventFuture;
 
     @Override
-    public void register() throws RawInputException {
+    public void register() throws WindowException {
         if(registered)
             return;
 
@@ -99,7 +98,7 @@ class WindowServiceImpl implements WindowService {
     }
 
     @Override
-    public void unregister() throws RawInputException {
+    public void unregister() throws WindowException {
         if(!registered)
             return;
 
@@ -234,7 +233,7 @@ class WindowServiceImpl implements WindowService {
         return USER32.DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
-    private static <T> T waitFutureAndPropagateException(Future<T> future, String exception) throws RawInputException {
+    private static <T> T waitFutureAndPropagateException(Future<T> future, String exception) throws WindowException {
         try {
             return future.get();
         } catch (InterruptedException e) {
