@@ -97,18 +97,20 @@ public class FileBasedHookService implements HookService {
     private Set<Hook> load() throws IOException {
         final Set<Hook> saved = new LinkedHashSet<>();
 
-        for (Iterator<Path> iterator = Files.list(rootFolder).iterator(); iterator.hasNext(); ) {
-            final Path hookFolder = iterator.next();
-            final Path hookJson = hookFolder.resolve(HOOK_JSON_FILE_NAME);
-            if(!Files.exists(hookJson) || Files.isDirectory(hookJson))
-                continue;
+        try(var files = Files.list(rootFolder)) {
+            for (Iterator<Path> iterator = files.iterator(); iterator.hasNext(); ) {
+                final Path hookFolder = iterator.next();
+                final Path hookJson = hookFolder.resolve(HOOK_JSON_FILE_NAME);
+                if(!Files.exists(hookJson) || Files.isDirectory(hookJson))
+                    continue;
 
-            try(Reader reader = Files.newBufferedReader(hookJson, StandardCharsets.UTF_8)) {
-                saved.add(gson
-                        .fromJson(reader, Hook.class)
-                        .withFolder(hookFolder));
-            } catch (JsonIOException ex) {
-                throw new IOException("Failed to deserialize hook in folder " + hookFolder.toAbsolutePath(), ex);
+                try(Reader reader = Files.newBufferedReader(hookJson, StandardCharsets.UTF_8)) {
+                    saved.add(gson
+                            .fromJson(reader, Hook.class)
+                            .withFolder(hookFolder));
+                } catch (JsonIOException ex) {
+                    throw new IOException("Failed to deserialize hook in folder " + hookFolder.toAbsolutePath(), ex);
+                }
             }
         }
 
