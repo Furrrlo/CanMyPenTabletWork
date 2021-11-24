@@ -42,7 +42,8 @@ static LRESULT CALLBACK HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 	if (nCode == HC_ACTION || nCode == HC_NOREMOVE)
 	{
 		DWORD_PTR blockKey;
-		LRESULT success = SendMessageTimeout(callback_reciever, WM_HOOK + nCode, wParam, lParam, SMTO_NOTIMEOUTIFNOTHUNG, 0, &blockKey);
+		// TODO: make timeout configurable
+		LRESULT success = SendMessageTimeout(callback_reciever, WM_HOOK + nCode, wParam, lParam, SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT, 100, &blockKey);
 		if(success)
 		{
 			return blockKey;
