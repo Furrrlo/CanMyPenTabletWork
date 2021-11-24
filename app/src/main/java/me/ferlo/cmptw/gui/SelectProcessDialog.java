@@ -106,7 +106,7 @@ public class SelectProcessDialog extends JDialog {
         processTable.setModel(processTableModel = new AbstractTableModel() {
 
             private static final String[] COLUMN_NAMES = { "PID", "Icon", "Name", "File" };
-            private static final Class<?>[] COLUMN_CLASSES = { String.class, ImageIcon.class, String.class, String.class };
+            private static final Class<?>[] COLUMN_CLASSES = { int.class, ImageIcon.class, String.class, String.class };
 
             private final ConcurrentMap<Process, ImageIcon> processIcons = new ConcurrentHashMap<>();
 
