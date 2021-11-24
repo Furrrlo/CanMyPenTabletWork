@@ -26,7 +26,11 @@ public interface ProcessService {
 
     Collection<Process> enumerateProcesses();
 
+    Collection<String> getProcessExtensions();
+
     List<BufferedImage> extractProcessIcons(Path processFile);
 
     List<BufferedImage> getFallbackIcons();
+
+    Collection<String> getIconExtensions();
 }

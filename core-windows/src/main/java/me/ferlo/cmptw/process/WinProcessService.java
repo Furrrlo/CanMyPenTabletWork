@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 
 public class WinProcessService implements ProcessService {
 
+    private static final Collection<String> PROCESS_EXTENSIONS = Collections.singleton("exe");
+    private static final Collection<String> ICON_EXTENSIONS = List.of("exe", "ico");
     private static final int[] WIN32_ICO_SIZES = { 16, 24, 32, 48, 64, 72, 96, 128, 180, 256 };
 
     private List<BufferedImage> fallbackIcons;
@@ -61,6 +63,11 @@ public class WinProcessService implements ProcessService {
     }
 
     @Override
+    public Collection<String> getProcessExtensions() {
+        return PROCESS_EXTENSIONS;
+    }
+
+    @Override
     public List<BufferedImage> extractProcessIcons(Path processFile) {
         final List<BufferedImage> icons = Arrays.stream(WIN32_ICO_SIZES)
                 .sequential()
@@ -92,6 +99,11 @@ public class WinProcessService implements ProcessService {
             // TODO: default win icon fallback?
             fallbackIcons = List.of(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB_PRE));
         return fallbackIcons;
+    }
+
+    @Override
+    public Collection<String> getIconExtensions() {
+        return ICON_EXTENSIONS;
     }
 
     /**

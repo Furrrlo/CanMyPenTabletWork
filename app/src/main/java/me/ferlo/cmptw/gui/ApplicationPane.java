@@ -14,12 +14,14 @@ import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 class ApplicationPane extends JPanel {
 
@@ -103,6 +105,15 @@ class ApplicationPane extends JPanel {
         final JButton browseIconBtn = new JButton("...");
         browseIconBtn.addActionListener(evt -> {
             final var chooser = new JFileChooser();
+            chooser.addChoosableFileFilter(new FileNameExtensionFilter(
+                    String.format("Icons (%s)", processService.getIconExtensions().stream()
+                            .map(ext -> "*." + ext)
+                            .collect(Collectors.joining(", "))),
+                    processService.getIconExtensions().toArray(String[]::new)));
+            chooser.setAcceptAllFileFilterUsed(true);
+            chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            chooser.setMultiSelectionEnabled(false);
+
             final var res = chooser.showOpenDialog(ApplicationPane.this);
             if (res != JFileChooser.APPROVE_OPTION)
                 return;

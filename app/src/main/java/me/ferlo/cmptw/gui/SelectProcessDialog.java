@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
@@ -182,6 +183,15 @@ public class SelectProcessDialog extends JDialog {
             browseBtn = new JButton("Browse");
             browseBtn.addActionListener(evt -> {
                 final var chooser = new JFileChooser();
+                chooser.addChoosableFileFilter(new FileNameExtensionFilter(
+                        String.format("Binaries (%s)", processService.getProcessExtensions().stream()
+                                .map(ext -> "*." + ext)
+                                .collect(Collectors.joining(", "))),
+                        processService.getProcessExtensions().toArray(String[]::new)));
+                chooser.setAcceptAllFileFilterUsed(true);
+                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                chooser.setMultiSelectionEnabled(false);
+
                 final var res = chooser.showOpenDialog(this);
                 if (res != JFileChooser.APPROVE_OPTION)
                     return;
