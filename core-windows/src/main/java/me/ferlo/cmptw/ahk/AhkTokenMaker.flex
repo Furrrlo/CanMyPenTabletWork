@@ -106,7 +106,7 @@ import org.fife.ui.rsyntaxtextarea.*;
             start = text.offset;
             break;
 
-          case Token.ANNOTATION:
+          case Token.COMMENT_DOCUMENTATION:
             state = MLCD;
             start = text.offset;
             break;
@@ -401,8 +401,8 @@ CompilerDirectiveEnd            = "*/"
 
 <MLCD> {
    [^\n*]+            {}
-   {CompilerDirectiveEnd}         { yybegin(YYINITIAL); addToken(start,zzStartRead+2-1, Token.ANNOTATION); }
+   {CompilerDirectiveEnd}         { yybegin(YYINITIAL); addToken(start,zzStartRead+2-1, Token.COMMENT_DOCUMENTATION); }
    "*"               {}
    \n |
-   <<EOF>>            { addToken(start,zzStartRead-1, Token.ANNOTATION); return firstToken; }
+   <<EOF>>            { addToken(start,zzStartRead-1, Token.COMMENT_DOCUMENTATION); return firstToken; }
 }
