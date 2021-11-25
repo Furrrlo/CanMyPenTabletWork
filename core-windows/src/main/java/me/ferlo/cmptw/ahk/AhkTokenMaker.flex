@@ -243,7 +243,8 @@ CompilerDirectiveEnd            = "*/"
    "gosub" | "goto" |
    "return" |
    "try" | "catch" | "throw" | "finally" |
-   "static" | "global" | "local" | "byref" | "class" { addToken(Token.RESERVED_WORD); }
+   "static" | "global" | "local" | "byref" | "class" |
+   "switch" | "case" { addToken(Token.RESERVED_WORD); }
 
    /* Variables. */
    {KeyVariable} { addToken(Token.VARIABLE); }
