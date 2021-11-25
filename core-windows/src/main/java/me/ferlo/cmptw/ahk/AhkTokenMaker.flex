@@ -275,7 +275,14 @@ CompilerDirectiveEnd            = "*/"
    "A_ScreenWidth" | "A_ScreenHeight" | "A_ScreenDPI" |
    "A_IPAddress1" | "A_IPAddress2" | "A_IPAddress3" | "A_IPAddress4" |
    "A_Cursor" | "A_CaretX" | "A_CaretY" | "Clipboard" | "ClipboardAll" |
-   "ErrorLevel" | "A_LastError" { addToken(Token.VARIABLE); }
+   "ErrorLevel" | "A_LastError" |
+   "A_Index" |
+   "A_LoopFileName" | "A_LoopFileExt" | "A_LoopFileFullPath" | "A_LoopFilePath" |
+   "A_LoopFileLongPath" | "A_LoopFileShortPath" | "A_LoopFileShortName" | "A_LoopFileDir" |
+   "A_LoopFileTimeModified" | "A_LoopFileTimeCreated" | "A_LoopFileTimeAccessed" | "A_LoopFileAttrib" |
+   "A_LoopFileSize" | "A_LoopFileSizeKB" | "A_LoopFileSizeMB" |
+   "A_LoopRegName" | "A_LoopRegType" | "A_LoopRegKey" | "A_LoopRegSubKey" | "A_LoopRegTimeModified" |
+   "A_LoopReadLine" | "A_LoopField" { addToken(Token.VARIABLE); }
 
    /* Commands */
    "AutoTrim" | "BlockInput" | "Click" | "ClipWait" |
