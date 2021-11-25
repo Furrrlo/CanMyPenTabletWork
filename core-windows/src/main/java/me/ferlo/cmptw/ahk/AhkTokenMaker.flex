@@ -217,6 +217,7 @@ KeyVariable = (\{(((.|
                   (Blind|Raw|Text))\})
 
 Directive            = (\#{Identifier})
+CompilerDirectiveSingleLine     = ";@Ahk2Exe-"
 CompilerDirectiveStart          = "/*@Ahk2Exe-"
 CompilerDirectiveEnd            = "*/"
 
@@ -368,7 +369,9 @@ CompilerDirectiveEnd            = "*/"
    {ErrorStringLiteral}      { addToken(Token.ERROR_STRING_DOUBLE); }
 
    /* Compiler directives */
+   {CompilerDirectiveSingleLine} { addToken(Token.COMMENT_DOCUMENTATION); }
    {CompilerDirectiveStart}     { start = zzMarkedPos-11; yybegin(MLCD); }
+   {CompilerDirectiveSingleLine}.*  { addToken(Token.COMMENT_DOCUMENTATION); addNullToken(); return firstToken; }
 
    /* Comment literals. */
    {MLCBegin}               { start = zzMarkedPos-2; yybegin(MLC); }
