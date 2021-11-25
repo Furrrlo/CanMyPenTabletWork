@@ -134,7 +134,7 @@ import org.fife.ui.rsyntaxtextarea.*;
     * @return      <code>true</code> if EOF was reached, otherwise
     *              <code>false</code>.
     */
-   private boolean zzRefill() {
+   private boolean /* keep */ zzRefill() {
       return zzCurrentPos>=s.offset+s.count;
    }
 
@@ -148,7 +148,7 @@ import org.fife.ui.rsyntaxtextarea.*;
     *
     * @param reader   the new input stream
     */
-   public final void yyreset(Reader reader) {
+   public final void /* keep */ yyreset(Reader reader) {
       // 's' has been updated.
       zzBuffer = s.array;
       /*

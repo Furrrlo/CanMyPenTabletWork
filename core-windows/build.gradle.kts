@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    id("me.ferlo.cmptw.jflex-token-maker")
 }
 
 dependencies {
@@ -11,6 +12,8 @@ dependencies {
 
     api("com.google.auto.service:auto-service-annotations:1.0")
     annotationProcessor("com.google.auto.service:auto-service:1.0")
+
+    jflex("de.jflex:jflex:1.4.1")
 }
 
 tasks.processResources {
