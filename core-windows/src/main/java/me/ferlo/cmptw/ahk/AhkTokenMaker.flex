@@ -243,8 +243,7 @@ CompilerDirectiveEnd            = "*/"
    "gosub" | "goto" |
    "return" |
    "try" | "catch" | "throw" | "finally" |
-   "static" | "global" | "local" | "byref" | "class" |
-   "exit" | "exitapp" { addToken(Token.RESERVED_WORD); }
+   "static" | "global" | "local" | "byref" | "class" { addToken(Token.RESERVED_WORD); }
 
    /* Variables. */
    {KeyVariable} { addToken(Token.VARIABLE); }
@@ -329,7 +328,7 @@ CompilerDirectiveEnd            = "*/"
    "WinGetTitle" | "WinHide" | "WinKill" | "WinMaximize" | "WinMenuSelectItem" | "WinMinimize" |
    "WinMinimizeAll" | "WinMinimizeAllUndo" | "WinMove" | "WinRestore" | "WinSet" | "WinSetTitle" |
    "WinShow" | "WinWait" | "WinWaitActive" | "WinWaitNotActive" |
-   "WinWaitClose" { addToken(Token.FUNCTION); }
+   "WinWaitClose" | "exit" | "exitapp" { addToken(Token.FUNCTION); }
 
    /* Functions */
    "abs" | "acos" | "asc" | "asin" | "atan" | "ceil" | "chr" | "cos" | "dllcall" | "exp" | "fileexist" | "floor" | "getkeystate" | "numget" | "numput" | "registercallback" |
