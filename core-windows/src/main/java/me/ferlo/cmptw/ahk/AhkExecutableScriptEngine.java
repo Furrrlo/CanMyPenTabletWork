@@ -1,6 +1,7 @@
 package me.ferlo.cmptw.ahk;
 
 import me.ferlo.cmptw.script.ExecutableScriptEngine;
+import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
@@ -12,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,6 +25,7 @@ class AhkExecutableScriptEngine implements ExecutableScriptEngine {
     private static final String UTF_8_BOM = "\ufeff";
 
     private final Path executable;
+    private AhkCompletionProvider completionProvider;
 
     public AhkExecutableScriptEngine(Path executable) {
         this.executable = executable;
@@ -137,6 +140,13 @@ class AhkExecutableScriptEngine implements ExecutableScriptEngine {
     @Override
     public String getSyntaxStyle() {
         return SYNTAX_STYLE_AHK;
+    }
+
+    @Override
+    public Optional<CompletionProvider> getCompletionProvider() {
+        if(completionProvider == null)
+            completionProvider = new AhkCompletionProvider();
+        return Optional.of(completionProvider);
     }
 
     @Override

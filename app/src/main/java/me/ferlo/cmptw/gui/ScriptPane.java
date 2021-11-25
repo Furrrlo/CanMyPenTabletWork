@@ -13,12 +13,14 @@ import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
+import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.Theme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -130,6 +132,15 @@ public class ScriptPane extends JPanel {
             if(syntaxTheme == null)
                 syntaxTheme = new DarklafRSyntaxTheme();
             syntaxTheme.apply(this);
+            scriptEngine.getCompletionProvider().ifPresent(provider -> {
+                final AutoCompletion autoCompletion = new AutoCompletion(provider);
+                autoCompletion.setTriggerKey(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.ALT_DOWN_MASK));
+                autoCompletion.setAutoCompleteEnabled(true);
+                autoCompletion.setAutoCompleteSingleChoices(false);
+                autoCompletion.setAutoActivationEnabled(true);
+                autoCompletion.setShowDescWindow(true);
+                autoCompletion.install(this);
+            });
 
             setSyntaxEditingStyle(scriptEngine.getSyntaxStyle());
             setCodeFoldingEnabled(true);

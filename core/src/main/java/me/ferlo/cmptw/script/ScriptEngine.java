@@ -1,5 +1,6 @@
 package me.ferlo.cmptw.script;
 
+import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public interface ScriptEngine {
 
@@ -40,5 +42,9 @@ public interface ScriptEngine {
 
     default String getSyntaxStyle() {
         return SyntaxConstants.SYNTAX_STYLE_NONE;
+    }
+
+    default Optional<CompletionProvider> getCompletionProvider() {
+        return Optional.empty();
     }
 }

@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-    // TODO: I don't like this dependency, but I can't think  of any way of removing it
+    // TODO: I don't like these dependency, but I can't think  of any way of removing them
     api("com.fifesoft:rsyntaxtextarea:${project.ext["rSyntaxTextAreaVersion"]}")
+    api("com.fifesoft:autocomplete:${project.ext["autocompleteVersion"]}")
 }

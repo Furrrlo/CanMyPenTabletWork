@@ -34,5 +34,6 @@ dependencies {
     implementation("com.github.jiconfont:jiconfont-swing:1.0.0")
     implementation("com.github.jiconfont:jiconfont-font_awesome:4.7.0.1")
     implementation("com.fifesoft:rsyntaxtextarea:${project.ext["rSyntaxTextAreaVersion"]}")
+    implementation("com.fifesoft:autocomplete:${project.ext["autocompleteVersion"]}")
     implementation("com.github.weisj:darklaf-extensions-rsyntaxarea:0.3.4")
 }

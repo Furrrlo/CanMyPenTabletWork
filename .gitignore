@@ -1,3 +1,7 @@
+ahk_variables.htm
+ahk_fileloop_variables.htm
+ahk_regloop_variables.htm
+ahk_functions.htm
 
 # Created by https://www.toptal.com/developers/gitignore/api/java,gradle,intellij
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,gradle,intellij
