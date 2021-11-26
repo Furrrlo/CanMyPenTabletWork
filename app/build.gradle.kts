@@ -12,8 +12,14 @@ dependencies {
     implementation(project(":core"))
     runtimeOnly(project(":core-windows"))
 
+    val jna = project.ext["jnaVersion"] as String
+    runtimeOnly("net.java.dev.jna:jna-jpms:$jna")
+    runtimeOnly("net.java.dev.jna:jna-platform-jpms:$jna")
+
     implementation("com.google.code.gson:gson:2.8.9")
-    implementation("net.harawata:appdirs:1.2.1")
+    implementation("net.harawata:appdirs:1.2.1") {
+        exclude(group = "net.java.dev.jna") // Already included anyway, just as a runtime dependency
+    }
 
     // Logging dependencies
     val slf4j = project.ext["slf4jVersion"] as String
