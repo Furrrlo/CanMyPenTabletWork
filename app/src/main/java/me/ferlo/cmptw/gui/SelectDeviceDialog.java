@@ -60,7 +60,7 @@ public class SelectDeviceDialog extends JDialog {
         add(contentPane);
 
         pack();
-        setSize(Math.max(200, getWidth()), Math.max(100, getHeight()));
+        setMinimumSize(new Dimension(Math.max(200, getWidth()), Math.max(100, getHeight())));
         setLocationRelativeTo(getOwner());
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);

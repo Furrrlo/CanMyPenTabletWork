@@ -231,7 +231,7 @@ public class SelectProcessDialog extends JDialog {
 
         add(contentPane);
 
-        setSize(700, 500);
+        setMinimumSize(new Dimension(700, 500));
         processTable.packAll();
         setLocationRelativeTo(getOwner());
 

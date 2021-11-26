@@ -106,7 +106,7 @@ public class SelectKeyStrokeDialog extends JDialog {
         add(contentPane);
 
         pack();
-        setSize(Math.max(250, getWidth()), Math.max(125, getHeight()));
+        setMinimumSize(new Dimension(Math.max(250, getWidth()), Math.max(125, getHeight())));
         setLocationRelativeTo(getOwner());
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
