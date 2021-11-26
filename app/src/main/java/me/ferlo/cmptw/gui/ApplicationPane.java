@@ -133,6 +133,7 @@ class ApplicationPane extends JPanel {
         add(buttonsPanel, new CC().growY().split(2));
 
         scriptsPane = new JMyTabbedPane<>();
+        scriptsPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
         addScriptBtn = new JButton(new ImageIcon(new MultiResolutionIconFont(FontAwesome.PLUS, 14, new Color(0, 150, 0))));
         addScriptBtn.setMargin(new Insets(2, 2, 2, 2));

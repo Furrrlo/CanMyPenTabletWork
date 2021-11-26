@@ -73,6 +73,7 @@ public class DevicePanel extends JPanel {
         add(buttonsPanel, new CC().growY().split(2));
 
         applicationsPane = new JMyTabbedPane<>();
+        applicationsPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
         final var fallbackBehavior = new ListenableValue<>(hook.get().fallbackBehavior());
         fallbackBehavior.addListener((oldV, newV) -> hook.update(h -> h.withFallbackBehavior(newV)));
