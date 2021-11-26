@@ -1,5 +1,6 @@
 package me.ferlo.cmptw.gui;
 
+import me.ferlo.cmptw.gui.hidpi.JDialogHiDpi;
 import me.ferlo.cmptw.hook.KeyboardHookEvent;
 import me.ferlo.cmptw.hook.KeyboardHookListener;
 import me.ferlo.cmptw.hook.KeyboardHookService;
@@ -13,7 +14,7 @@ import java.awt.event.KeyEvent;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
-public class SelectKeyStrokeDialog extends JDialog {
+public class SelectKeyStrokeDialog extends JDialogHiDpi {
 
     private final KeyboardHookService keyboardHookService;
     private final String targetDeviceId;
