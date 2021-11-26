@@ -137,14 +137,14 @@ class ApplicationPane extends JPanel {
         addScriptBtn = new JButton(new ImageIcon(new MultiResolutionIconFont(FontAwesome.PLUS, 14, new Color(0, 150, 0))));
         addScriptBtn.setMargin(new Insets(2, 2, 2, 2));
         addScriptBtn.addActionListener(evt -> SelectKeyStrokeDialog
-                .selectKeyStroke(SwingUtilities.windowForComponent(this), keyboardHookService, null) // TODO: target device
-                .thenAccept(keyboardEvt -> SwingUtilities.invokeLater(() -> {
-                    if(keyboardEvt == null)
+                .selectKeyStroke(SwingUtilities.windowForComponent(this), keyboardHookService, null, 0) // TODO: target device
+                .thenAccept(res -> SwingUtilities.invokeLater(() -> {
+                    if(res == null)
                         return;
 
                     final var script = new Hook.HookScript(
                             "New",
-                            new Hook.KeyStroke(keyboardEvt.awtKeyCode(), keyboardEvt.modifiers()),
+                            new Hook.KeyStroke(res.evt().awtKeyCode(), res.evt().modifiers(), res.toggleKeysMask()),
                             scriptEngine.getNewScript());
                     addScriptComponent(script);
                     applicationHook.update(d -> d.addScript(script));

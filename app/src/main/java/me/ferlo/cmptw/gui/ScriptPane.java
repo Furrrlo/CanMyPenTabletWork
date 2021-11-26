@@ -24,6 +24,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ScriptPane extends JPanel {
@@ -70,13 +71,7 @@ public class ScriptPane extends JPanel {
         final JTextField keyStrokeField;
         infoPanel.add(keyStrokeField = new JListeningTextField<>(
                 script,
-                s -> {
-                    final StringBuilder sb = new StringBuilder();
-                    if(s.keyStroke().modifiers() != 0)
-                        sb.append(KeyboardHookEvent.getModifiersText(s.keyStroke().modifiers(), " + ")).append(" + ");
-                    sb.append(KeyEvent.getKeyText(s.keyStroke().keyCode()));
-                    return sb.toString();
-                },
+                s -> s.keyStroke().getText(" + "),
                 (v, newName) -> { throw new UnsupportedOperationException("Key stroke field is not supposed to be editable"); }
         ), new CC().growX().split(2));
         keyStrokeField.setEditable(false);
@@ -84,9 +79,31 @@ public class ScriptPane extends JPanel {
         final JButton keyStrokeButton;
         infoPanel.add(keyStrokeButton = new JButton("Change"));
         keyStrokeButton.addActionListener(evt -> SelectKeyStrokeDialog
-                .selectKeyStroke(SwingUtilities.windowForComponent(this), keyboardHookService, null) // TODO: target device
-                .thenAccept(keyboardEvt -> script.update(s -> s
-                        .withKeyStroke(new Hook.KeyStroke(keyboardEvt.awtKeyCode(), keyboardEvt.modifiers())))));
+                .selectKeyStroke(
+                        SwingUtilities.windowForComponent(this),
+                        keyboardHookService,
+                        null,  // TODO: target device
+                        script.get().keyStroke().toggleModifiersMask())
+                .thenAccept(res -> {
+                    if(res != null)
+                        script.update(s -> s.withKeyStroke(new Hook.KeyStroke(
+                                res.evt().awtKeyCode(), res.evt().modifiers(), res.toggleKeysMask())));
+                }));
+
+        infoPanel.add(new JLabel("Match toggle keys: "));
+        final BiFunction<Integer, String, JListeningCheckBox<Hook.HookScript>> makeToggleKeyCheckBox =
+                (modifier, text) -> new JListeningCheckBox<>(
+                        text,
+                        script,
+                        v -> (v.keyStroke().toggleModifiersMask() & modifier) != 0,
+                        (v, bool) -> v.update(s -> s.withKeyStroke(s.keyStroke().updateToggleModifiersMask(mask -> {
+                            if(bool)
+                                return mask | modifier;
+                            return mask & ~modifier;
+                        }))));
+        infoPanel.add(makeToggleKeyCheckBox.apply(KeyboardHookEvent.CAPS_LOCK_MASK, "Caps Lock"), new CC().split(3));
+        infoPanel.add(makeToggleKeyCheckBox.apply(KeyboardHookEvent.NUM_LOCK_MASK, "Num Lock"));
+        infoPanel.add(makeToggleKeyCheckBox.apply(KeyboardHookEvent.SCROLL_LOCK_MASK, "Scroll Lock"));
 
         add(infoPanel, new CC().growX());
         add(new JLabel("Script: "), new CC().split(3).growX());

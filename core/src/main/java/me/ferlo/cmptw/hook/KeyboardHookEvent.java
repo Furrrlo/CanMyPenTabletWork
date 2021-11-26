@@ -78,6 +78,7 @@ public record KeyboardHookEvent(
     public static int NUM_LOCK_MASK = 0x100;
     public static int CAPS_LOCK_MASK = 0x200;
     public static int SCROLL_LOCK_MASK = 0x400;
+    public static int TOGGLE_MODIFIERS_MASK = NUM_LOCK_MASK | CAPS_LOCK_MASK | SCROLL_LOCK_MASK;
 
     public static int SHIFT_MASK = LSHIFT_MASK | RSHIFT_MASK;
     public static int CTRL_MASK = LCTRL_MASK | RCTRL_MASK;
@@ -152,6 +153,16 @@ public record KeyboardHookEvent(
     }
 
     public static String getModifiersText(int modifiers, String separator) {
+        return getModifiersText(modifiers, TOGGLE_MODIFIERS_MASK, separator);
+    }
+
+    public static String getModifiersText(int modifiers, int toggleModifiersMask) {
+        return getModifiersText(modifiers, toggleModifiersMask, "+");
+    }
+
+    public static String getModifiersText(int modifiers, int toggleModifiersMask, String separator) {
+        toggleModifiersMask = toggleModifiersMask & TOGGLE_MODIFIERS_MASK;
+
         StringBuilder buf = new StringBuilder();
         if ((modifiers & META_MASK) != 0) {
             buf.append((modifiers & LMETA_MASK) != 0 ? "Left " : "Right ");
@@ -176,16 +187,22 @@ public record KeyboardHookEvent(
             buf.append(Toolkit.getProperty("AWT.shift", "Shift"));
             buf.append(separator);
         }
-        if ((modifiers & CAPS_LOCK_MASK) != 0) {
+        if ((toggleModifiersMask & CAPS_LOCK_MASK) != 0) {
             buf.append(Toolkit.getProperty("AWT.capsLock", "Caps Lock"));
+            if((modifiers & CAPS_LOCK_MASK) == 0)
+                buf.append(" Off");
             buf.append(separator);
         }
-        if ((modifiers & NUM_LOCK_MASK) != 0) {
+        if ((toggleModifiersMask & NUM_LOCK_MASK) != 0) {
             buf.append(Toolkit.getProperty("AWT.numLock", "Num Lock"));
+            if((modifiers & NUM_LOCK_MASK) == 0)
+                buf.append(" Off");
             buf.append(separator);
         }
-        if ((modifiers & SCROLL_LOCK_MASK) != 0) {
+        if ((toggleModifiersMask & SCROLL_LOCK_MASK) != 0) {
             buf.append(Toolkit.getProperty("AWT.scrollLock", "Scroll Lock"));
+            if((modifiers & SCROLL_LOCK_MASK) == 0)
+                buf.append(" Off");
             buf.append(separator);
         }
 

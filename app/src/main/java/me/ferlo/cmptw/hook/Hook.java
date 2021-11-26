@@ -1,7 +1,9 @@
 package me.ferlo.cmptw.hook;
 
+import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.IntUnaryOperator;
 
 public record Hook(Device device,
                    Collection<ApplicationHook> applicationHooks,
@@ -145,7 +147,36 @@ public record Hook(Device device,
         }
     }
 
-    public record KeyStroke(int keyCode, int modifiers) {
+    public record KeyStroke(int keyCode, int modifiers, int toggleModifiersMask) {
+
+        public boolean matches(int keyCode, int modifiers) {
+            return keyCode() == keyCode && (modifiers() & toggleModifiersMask) == (modifiers & toggleModifiersMask);
+        }
+
+        public String getText() {
+            return getText("+");
+        }
+
+        public String getText(String separator) {
+            final StringBuilder sb = new StringBuilder();
+            final String modifiersText;
+            if(!(modifiersText = getModifiersText(separator)).isEmpty())
+                sb.append(modifiersText).append(separator);
+            sb.append(KeyEvent.getKeyText(keyCode()));
+            return sb.toString();
+        }
+
+        public String getModifiersText() {
+            return KeyboardHookEvent.getModifiersText(modifiers(), toggleModifiersMask());
+        }
+
+        public String getModifiersText(String separator) {
+            return KeyboardHookEvent.getModifiersText(modifiers(), toggleModifiersMask(), separator);
+        }
+
+        public KeyStroke updateToggleModifiersMask(IntUnaryOperator toggleModifiersMaskUpdater) {
+            return new KeyStroke(keyCode, modifiers, toggleModifiersMaskUpdater.applyAsInt(toggleModifiersMask));
+        }
     }
 
     public enum FallbackBehavior { IGNORE, DELETE, DELETE_AND_PLAY_SOUND }

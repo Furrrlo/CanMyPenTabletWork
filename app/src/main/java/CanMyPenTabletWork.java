@@ -93,7 +93,7 @@ public class CanMyPenTabletWork {
 
         final Hook.ApplicationHook application = maybeApplication.get();
         final Optional<Hook.HookScript> maybeScript = application.scripts().stream()
-                .filter(s -> s.keyStroke().keyCode() == event.awtKeyCode() && s.keyStroke().modifiers() == event.modifiers())
+                .filter(s -> s.keyStroke().matches(event.awtKeyCode(), event.modifiers()))
                 .findFirst();
         if(maybeScript.isEmpty())
             return fallbackBehavior(event, hook);

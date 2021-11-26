@@ -166,6 +166,7 @@ class HookGsonSerializer implements JsonSerializer<Hook>, JsonDeserializer<Hook>
             // TODO: save as plain text?
             keyStroke.add("key_code", new JsonPrimitive(src.keyCode()));
             keyStroke.add("modifiers", new JsonPrimitive(src.modifiers()));
+            keyStroke.add("toggle_modifiers_mask", new JsonPrimitive(src.toggleModifiersMask()));
             return keyStroke;
         }
 
@@ -176,7 +177,8 @@ class HookGsonSerializer implements JsonSerializer<Hook>, JsonDeserializer<Hook>
             final JsonObject obj = json.getAsJsonObject();
             return new Hook.KeyStroke(
                     obj.getAsJsonPrimitive("key_code").getAsInt(),
-                    obj.getAsJsonPrimitive("modifiers").getAsInt());
+                    obj.getAsJsonPrimitive("modifiers").getAsInt(),
+                    obj.getAsJsonPrimitive("toggle_modifiers_mask").getAsInt());
         }
     }
 }
