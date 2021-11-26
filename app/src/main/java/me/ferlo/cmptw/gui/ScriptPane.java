@@ -1,5 +1,6 @@
 package me.ferlo.cmptw.gui;
 
+import com.github.weisj.darklaf.LafManager;
 import com.github.weisj.darklaf.components.loading.LoadingIndicator;
 import com.github.weisj.darklaf.components.text.NumberedTextComponent;
 import com.github.weisj.darklaf.extensions.rsyntaxarea.DarklafRSyntaxTheme;
@@ -15,6 +16,7 @@ import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rtextarea.RTextScrollPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,14 +143,16 @@ public class ScriptPane extends JPanel {
         });
         add(validateBtn);
 
-        add(new NumberedTextComponent(new JListeningRSyntaxTextArea<>(
+        final var textArea = new JListeningRSyntaxTextArea<>(
                 script,
                 Hook.HookScript::script,
                 (v, newScript) -> v.update(a -> a.withScript(newScript))
         ) {{
-            if(syntaxTheme == null)
-                syntaxTheme = new DarklafRSyntaxTheme();
-            syntaxTheme.apply(this);
+            if(LafManager.isInstalled()) {
+                if (syntaxTheme == null)
+                    syntaxTheme = new DarklafRSyntaxTheme();
+                syntaxTheme.apply(this);
+            }
             scriptEngine.getCompletionProvider().ifPresent(provider -> {
                 final AutoCompletion autoCompletion = new AutoCompletion(provider);
                 autoCompletion.setTriggerKey(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.ALT_DOWN_MASK));
@@ -161,6 +165,7 @@ public class ScriptPane extends JPanel {
 
             setSyntaxEditingStyle(scriptEngine.getSyntaxStyle());
             setCodeFoldingEnabled(true);
-        }}), new CC().grow());
+        }};
+        add(LafManager.isInstalled() ? new NumberedTextComponent(textArea) : new RTextScrollPane(textArea), new CC().grow());
     }
 }
