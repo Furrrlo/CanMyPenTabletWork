@@ -1,6 +1,5 @@
 package me.ferlo.cmptw.gui;
 
-import me.ferlo.cmptw.gui.hidpi.JDialogHiDpi;
 import me.ferlo.cmptw.gui.hidpi.MultiResolutionIconImage;
 import me.ferlo.cmptw.process.Process;
 import me.ferlo.cmptw.process.ProcessService;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class SelectProcessDialog extends JDialogHiDpi {
+public class SelectProcessDialog extends JDialog {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectProcessDialog.class);
     private static final ExecutorService BACKGROUND_ICON_LOADER = Executors.newFixedThreadPool(5, new ThreadFactory() {

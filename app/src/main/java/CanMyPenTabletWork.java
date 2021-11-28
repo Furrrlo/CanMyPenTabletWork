@@ -2,6 +2,7 @@ import com.github.weisj.darklaf.LafManager;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import me.ferlo.cmptw.gui.CanMyPenTabletWorkTray;
+import me.ferlo.cmptw.gui.hidpi.win.WinWindowHiDpiFix;
 import me.ferlo.cmptw.hook.*;
 import me.ferlo.cmptw.process.Process;
 import me.ferlo.cmptw.process.ProcessService;
@@ -45,6 +46,7 @@ public class CanMyPenTabletWork {
 
             keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
 
+            WinWindowHiDpiFix.install();
             IconFontSwing.register(FontAwesome.getIconFont());
             LafManager.registerDefaultsAdjustmentTask((currentTheme, properties) -> {
                 UIManager.getDefaults().put(IContentDesign.COLOR_MESSAGE_BACKGROUND, properties.get("controlBackground"));

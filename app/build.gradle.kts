@@ -10,6 +10,7 @@ application {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":win32-window-minsize-fix"))
     runtimeOnly(project(":core-windows"))
 
     val jna = project.ext["jnaVersion"] as String

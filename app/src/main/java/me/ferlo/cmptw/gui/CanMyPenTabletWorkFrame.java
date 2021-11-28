@@ -1,6 +1,5 @@
 package me.ferlo.cmptw.gui;
 
-import me.ferlo.cmptw.gui.hidpi.JFrameHiDpi;
 import me.ferlo.cmptw.hook.HookService;
 import me.ferlo.cmptw.hook.KeyboardHookService;
 import me.ferlo.cmptw.process.ProcessService;
@@ -9,7 +8,7 @@ import me.ferlo.cmptw.script.ScriptEngine;
 import javax.swing.*;
 import java.awt.*;
 
-public class CanMyPenTabletWorkFrame extends JFrameHiDpi {
+public class CanMyPenTabletWorkFrame extends JFrame {
 
     public CanMyPenTabletWorkFrame(HookService hookService,
                                    KeyboardHookService keyboardHookService,
