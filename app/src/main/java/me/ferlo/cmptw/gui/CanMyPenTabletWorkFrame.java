@@ -18,7 +18,7 @@ public class CanMyPenTabletWorkFrame extends JFrame {
                                    Image icon) throws HeadlessException {
         setTitle(title);
         setIconImage(icon);
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
         setContentPane(new HooksPane(hookService, keyboardHookService, scriptEngine, processService));
         setMinimumSize(new Dimension(700, 700));
         setSize(700, 700);

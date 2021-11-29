@@ -66,6 +66,7 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
 
     public void showGui() {
         if(gui != null) {
+            gui.setVisible(true);
             gui.setExtendedState(gui.getExtendedState() & ~JFrame.ICONIFIED);
             gui.toFront();
             gui.requestFocus();
@@ -117,14 +118,15 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
                    String title,
                    Image icon) throws HeadlessException {
             super(hookService, keyboardHookService, scriptEngine, processService, title, icon);
+//            setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         }
 
-        @Override
-        public void dispose() {
-            super.dispose();
-
-            if(gui == this)
-                gui = null;
-        }
+//        @Override
+//        public void dispose() {
+//            super.dispose();
+//
+//            if(gui == this)
+//                gui = null;
+//        }
     }
 }
