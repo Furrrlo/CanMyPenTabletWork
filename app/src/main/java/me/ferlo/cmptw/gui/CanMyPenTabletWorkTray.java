@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService, ThemePreferenceListener {
 
@@ -34,7 +36,13 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
                 new MultiResolutionIconFont(FontAwesome.PENCIL_SQUARE_O, 16, Color.WHITE),
                 "CanMyPenTabletWork");
         setImageAutoSize(true);
-        addActionListener(evt -> showGui());
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if(e.getButton() == MouseEvent.BUTTON1)
+                    showGui();
+            }
+        });
 
         this.hookService = hookService;
         this.keyboardHookService = keyboardHookService;
