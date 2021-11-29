@@ -4,6 +4,9 @@ import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.DBT;
+import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_DEVICEINTERFACE;
+import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.platform.win32.WinUser.RAWINPUTDEVICELIST;
@@ -25,6 +28,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RawKeyboardInputServiceImpl.class);
     private static final RawInput RAW_INPUT = RawInput.INSTANCE;
+    private static final User32 USER32 = User32.INSTANCE;
     private static final RawInputDevice UNKNOWN_DEVICE = new RawInputDevice(
             "Unknwon",
             "Unknwon",
@@ -34,6 +38,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     private final WindowService windowService;
     private final Object lock = new Object();
     private volatile boolean registered;
+    private HDEVNOTIFY notifyHandle;
 
     private final Collection<RawInputKeyListener> listeners = ConcurrentHashMap.newKeySet();
     private final ConcurrentMap<HANDLE, RawInputDevice> devices = new ConcurrentHashMap<>();
@@ -71,7 +76,16 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
             windowService.addListener(WM_INPUT, this::wndProc);
             windowService.addListener(WM_USB_DEVICECHANGE, this::wndProc);
 
-            // TODO: register change notifs
+            // Register change notifications
+            final var filter = new DEV_BROADCAST_DEVICEINTERFACE();
+            filter.dbcc_size = filter.size();
+            filter.dbcc_devicetype = DBT.DBT_DEVTYP_DEVICEINTERFACE;
+            notifyHandle = USER32.RegisterDeviceNotification(
+                    windowService.getHwnd(),
+                    filter,
+                    User32.DEVICE_NOTIFY_WINDOW_HANDLE | User32.DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
+            if(notifyHandle == null)
+                throw new RawInputException();
 
             // Get all current devices
             devices.putAll(getCurrentDeviceList());
@@ -90,16 +104,19 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
             registered = false;
             windowService.removeListener(WM_INPUT);
             windowService.removeListener(WM_USB_DEVICECHANGE);
-//            final List<Throwable> exceptions = new ArrayList<>();
+            final List<Throwable> exceptions = new ArrayList<>();
 
-            // TODO: remove change notifs
+            // Remove change notifications
+            if(notifyHandle != null && !USER32.UnregisterDeviceNotification(notifyHandle))
+                exceptions.add(new RawInputException());
+
             // TODO: remove RegisterRawInputDevices
 
-//            if(!exceptions.isEmpty()) {
-//                final RawInputException ex = new RawInputException("Failed to unregister RawKeyboardInputServiceImpl");
-//                exceptions.forEach(ex::addSuppressed);
-//                throw ex;
-//            }
+            if(!exceptions.isEmpty()) {
+                final RawInputException ex = new RawInputException("Failed to unregister RawKeyboardInputServiceImpl");
+                exceptions.forEach(ex::addSuppressed);
+                throw ex;
+            }
         }
     }
 
