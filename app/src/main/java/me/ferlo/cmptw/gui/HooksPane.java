@@ -74,7 +74,7 @@ class HooksPane extends JComboBoxTabbedPane<ListenableValue<Hook>> {
                     final Optional<Hook> maybeHook = getOptions().stream()
                             .map(Option::getKey)
                             .map(ListenableValue::get)
-                            .filter(d -> d.device().name().equals(device.getId()))
+                            .filter(d -> d.device().id().equals(device.getId()))
                             .findFirst();
                     if(maybeHook.isPresent()) {
                         JOptionPane.showMessageDialog(
