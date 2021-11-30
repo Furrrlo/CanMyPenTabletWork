@@ -1,4 +1,4 @@
-group = "me.ferlo.cmptw"
+group = "com.github.furrrlo.cmptw"
 
 subprojects {
     if(this == project(":win32-keyboard-hook"))

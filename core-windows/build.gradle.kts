@@ -1,6 +1,6 @@
 plugins {
     id("cmptw.java-library-conventions")
-    id("me.ferlo.cmptw.jflex-token-maker")
+    id("com.github.furrrlo.jflex-token-maker")
 }
 
 dependencies {

@@ -3,7 +3,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "me.ferlo.cmptw"
+group = "com.github.furrrlo"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_16
@@ -23,11 +23,11 @@ gradlePlugin {
     plugins {
         create("jflex") {
             id = "${group}.jflex"
-            implementationClass = "me.ferlo.cmptw.JFlexPlugin"
+            implementationClass = "com.github.furrrlo.jflex.JFlexPlugin"
         }
         create("jflex-token-maker") {
             id = "${group}.jflex-token-maker"
-            implementationClass = "me.ferlo.cmptw.JFlexTokenMakerPlugin"
+            implementationClass = "com.github.furrrlo.jflex.JFlexTokenMakerPlugin"
         }
     }
 }
