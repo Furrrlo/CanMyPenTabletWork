@@ -1,3 +1,5 @@
+package com.github.furrrlo.cmptw.app;
+
 import com.github.weisj.darklaf.LafManager;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -29,7 +31,7 @@ import java.awt.event.KeyEvent;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-public class CanMyPenTabletWork {
+class CanMyPenTabletWork {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CanMyPenTabletWork.class);
 
