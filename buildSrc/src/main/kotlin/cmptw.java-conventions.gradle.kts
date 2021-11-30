@@ -1,5 +1,6 @@
 plugins {
     java
+    id("cmptw.java-extra-module-info")
 }
 
 group = rootProject.group

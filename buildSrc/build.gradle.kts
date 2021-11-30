@@ -14,6 +14,12 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+dependencies {
+    implementation("de.jjohannes.gradle:extra-java-module-info:0.9")
+    // Workaround to import the TOML file, see https://github.com/gradle/gradle/issues/15383
+    implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
+}
+
 repositories {
     mavenCentral()
     gradlePluginPortal()
