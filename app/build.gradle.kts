@@ -1,5 +1,6 @@
 plugins {
     application
+    id("cmptw.java-conventions")
 }
 
 version = "0.1"

@@ -1,5 +1,6 @@
 plugins {
     `java-gradle-plugin`
+    `kotlin-dsl`
 }
 
 group = "me.ferlo.cmptw"
@@ -11,6 +12,11 @@ java {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
 }
 
 gradlePlugin {
