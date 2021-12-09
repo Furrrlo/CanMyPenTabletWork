@@ -43,6 +43,14 @@ dependencies {
 }
 
 jlink {
+    // Fix task inputs, it uses the configuration name insteaf of the file collection
+    listOf(
+        "prepareModulesDir",
+        "prepareMergedJarsDir",
+    ).forEach { taskName -> tasks.named(taskName) {
+        inputs.files(configuration.map { project.configurations.named(it) })
+    }}
+
     options.addAll(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
 
     // Both core and the slf4j impl are not modular
