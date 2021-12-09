@@ -72,7 +72,7 @@ jlink {
     if(DefaultNativePlatform.getCurrentOperatingSystem().isWindows) {
         jpackage {
             installerType = "msi"
-            installerOptions = baseInstallerOptions + listOf("--win-dir-chooser", "--win-menu", "--win-shortcut")
+            installerOptions = baseInstallerOptions + listOf("--win-dir-chooser", "--win-shortcut-prompt", "--win-menu", "--win-shortcut")
             imageOptions = baseImageOptions
 //            icon = "icon.ico"
         }
