@@ -1,4 +1,4 @@
-package me.ferlo.cmptw.ahk;
+package com.github.furrrlo.cmptw.windows.ahk.syntax;
 
 import java.io.*;
 import javax.swing.text.Segment;

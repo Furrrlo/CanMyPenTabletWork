@@ -4,8 +4,10 @@ module com.github.furrrlo.cmptw.app {
     requires org.slf4j;
     requires jul.to.slf4j;
 
-    requires com.google.gson;
     requires net.harawata.appdirs;
+
+    requires com.google.gson;
+    exports com.github.furrrlo.cmptw.app.hook to com.google.gson;
 
     requires java.desktop;
     requires com.github.furrrlo.cmptw.windows.window_minsize_fix;

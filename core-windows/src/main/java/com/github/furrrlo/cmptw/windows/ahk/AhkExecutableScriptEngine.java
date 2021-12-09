@@ -1,7 +1,7 @@
 package com.github.furrrlo.cmptw.windows.ahk;
 
-import me.ferlo.cmptw.ahk.AhkTokenMaker;
 import com.github.furrrlo.cmptw.script.ExecutableScriptEngine;
+import com.github.furrrlo.cmptw.windows.ahk.syntax.AhkTokenMaker;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
