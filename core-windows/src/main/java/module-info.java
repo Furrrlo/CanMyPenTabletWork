@@ -10,6 +10,9 @@ module com.github.furrrlo.cmptw.windows {
     requires com.sun.jna;
     requires com.sun.jna.platform;
     requires transitive com.github.furrrlo.cmptw.core;
+    exports com.github.furrrlo.cmptw.windows.process to com.github.furrrlo.cmptw.core;
+    exports com.github.furrrlo.cmptw.windows.hook to com.github.furrrlo.cmptw.core;
+    exports com.github.furrrlo.cmptw.windows.ahk to com.github.furrrlo.cmptw.core;
 
     provides ProcessServiceProvider with WinProcessServiceProvider;
     provides KeyboardHookServiceProvider with WinKeyboardHookServiceProvider;
