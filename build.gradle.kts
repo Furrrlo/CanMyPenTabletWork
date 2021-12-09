@@ -1,5 +1,9 @@
 group = "com.github.furrrlo.cmptw"
 
+tasks.wrapper {
+    gradleVersion = "7.3.1"
+}
+
 subprojects {
     if(this == project(":win32-keyboard-hook"))
         return@subprojects
