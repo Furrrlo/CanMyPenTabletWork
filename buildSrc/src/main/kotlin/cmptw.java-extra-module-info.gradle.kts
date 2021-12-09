@@ -35,6 +35,13 @@ extraJavaModuleInfo {
 
         exports("com.github.weisj.darklaf.extensions.rsyntaxarea")
     }
+
+    module(libs.appdirs.get(), "net.harawata.appdirs") {
+        requires("com.sun.jna")
+        requires("com.sun.jna.platform")
+
+        exports("net.harawata.appdirs")
+    }
 }
 
 configurations.annotationProcessor {
