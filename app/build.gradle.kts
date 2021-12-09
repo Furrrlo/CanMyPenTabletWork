@@ -78,6 +78,9 @@ jlink {
     }
 
     if(DefaultNativePlatform.getCurrentOperatingSystem().isWindows) {
+        // Add windows specific core module as a root module, noone references it otherwise
+        options.addAll(listOf("--add-modules", "com.github.furrrlo.cmptw.windows"))
+
         jpackage {
             installerType = "msi"
             installerOptions = baseInstallerOptions + listOf("--win-dir-chooser", "--win-shortcut-prompt", "--win-menu", "--win-shortcut")
