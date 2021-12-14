@@ -151,7 +151,8 @@ public class ScriptPane extends JPanel {
             if(LafManager.isInstalled()) {
                 if (syntaxTheme == null)
                     syntaxTheme = new DarklafRSyntaxTheme();
-                syntaxTheme.apply(this);
+                // TODO: broken for latest.integration
+//                syntaxTheme.apply(this);
             }
             scriptEngine.getCompletionProvider().ifPresent(provider -> {
                 final AutoCompletion autoCompletion = new AutoCompletion(provider);

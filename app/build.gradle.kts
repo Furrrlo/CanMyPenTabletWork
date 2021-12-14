@@ -15,6 +15,18 @@ application {
     mainModule.set(group.toString())
 }
 
+// TODO: To use darklaf nightly build (for module support)
+repositories {
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+    }
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+}
+// --------------------------------------
+
 dependencies {
     implementation(projects.core)
     implementation(projects.win32WindowMinsizeFix)
@@ -55,8 +67,6 @@ jlink {
     forceMerge("log4j-api")
     // jul to slf4j is not modular
     forceMerge("slf4j")
-    // Proper module support is on the next breaking version
-    forceMerge("darklaf")
 
     launcher {
         name = "CanMyPenTabletWork"
