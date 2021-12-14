@@ -10,33 +10,33 @@ plugins {
 
 val libs = the<LibrariesForLibs>()
 extraJavaModuleInfo {
-    val module = { dependency: MinimalExternalModuleDependency, moduleName: String, conf: Action<in ModuleInfo> ->
-        module(jarNameFromModule(dependency), moduleName, versionForModule(dependency), conf)
-    }
-    val automaticModule = { dependency: MinimalExternalModuleDependency, moduleName: String ->
+    fun module(dependency: MinimalExternalModuleDependency,
+               version: String = versionForModule(dependency),
+               moduleName: String, conf: Action<in ModuleInfo>
+    ) = module(jarNameFromModule(dependency, version), moduleName, version, conf)
+    fun automaticModule(dependency: MinimalExternalModuleDependency, version: String = versionForModule(dependency), moduleName: String) =
         automaticModule(jarNameFromModule(dependency), moduleName)
-    }
 
     failOnMissingModuleInfo.set(true)
     automaticModule(jarNameFromModule("org.jetbrains:annotations:16.0.2"), "org.jetbrains.annotations")
 
-    automaticModule(libs.taskdialogs.get(), "org.bidib.org.oxbow.swingbits")
-    automaticModule(libs.swingx.get(), "org.swinglabs.swingx.core")
-    automaticModule(libs.miglayout.get(), "com.miglayout")
-    automaticModule(libs.jiconfont.core.get(), "com.github.jiconfont.core")
-    automaticModule(libs.jiconfont.swing.get(), "com.github.jiconfont.swing")
-    automaticModule(libs.jiconfont.fontawesome.get(), "com.github.jiconfont.font_awesome")
-    automaticModule(libs.rsyntaxtextarea.get(), "com.fifesoft.rsyntaxtextarea")
-    automaticModule(libs.autocomplete.get(), "com.fifesoft.autocomplete")
+    automaticModule(libs.taskdialogs.get(), moduleName = "org.bidib.org.oxbow.swingbits")
+    automaticModule(libs.swingx.get(), moduleName = "org.swinglabs.swingx.core")
+    automaticModule(libs.miglayout.get(), moduleName = "com.miglayout")
+    automaticModule(libs.jiconfont.core.get(), moduleName = "com.github.jiconfont.core")
+    automaticModule(libs.jiconfont.swing.get(), moduleName = "com.github.jiconfont.swing")
+    automaticModule(libs.jiconfont.fontawesome.get(), moduleName = "com.github.jiconfont.font_awesome")
+    automaticModule(libs.rsyntaxtextarea.get(), moduleName = "com.fifesoft.rsyntaxtextarea")
+    automaticModule(libs.autocomplete.get(), moduleName = "com.fifesoft.autocomplete")
 
-    module(libs.darklaf.rsyntaxarea.get(), "darklaf.extensions.rsyntaxarea") {
+    module(libs.darklaf.rsyntaxarea.get(), moduleName = "darklaf.extensions.rsyntaxarea") {
         requires("darklaf.core")
         requires("com.fifesoft.rsyntaxtextarea")
 
         exports("com.github.weisj.darklaf.extensions.rsyntaxarea")
     }
 
-    module(libs.appdirs.get(), "net.harawata.appdirs") {
+    module(libs.appdirs.get(), moduleName = "net.harawata.appdirs") {
         requires("com.sun.jna")
         requires("com.sun.jna.platform")
 
@@ -48,8 +48,8 @@ configurations.annotationProcessor {
     attributes { attribute(Attribute.of("javaModule", Boolean::class.javaObjectType), false) }
 }
 
-fun jarNameFromModule(dependency: MinimalExternalModuleDependency): String {
-    return jarNameFromModule(dependency.module.group, dependency.module.name, versionForModule(dependency))
+fun jarNameFromModule(dependency: MinimalExternalModuleDependency, version: String = versionForModule(dependency)): String {
+    return jarNameFromModule(dependency.module.group, dependency.module.name, version)
 }
 
 fun jarNameFromModule(decl: String): String {
