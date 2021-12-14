@@ -1,6 +1,6 @@
 [versions]
-slf4j = "2.0.0-alpha2"
-log4j = "2.14.1"
+slf4j = "2.0.0-alpha5"
+log4j = "2.16.0"
 gson = "2.8.9"
 jna = "5.9.0"
 appdirs = "1.2.1"
@@ -23,6 +23,7 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 appdirs = { module = "net.harawata:appdirs", version.ref = "appdirs" }
 # Logging
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-jdklogging = { module = "org.slf4j:slf4j-jdk-platform-logging", version.ref = "slf4j" }
 jul-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" } # To redirect jna to slf4j
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
@@ -43,7 +44,7 @@ autoservice-annotations = { module = "com.google.auto.service:auto-service-annot
 autoservice-processor = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }
 
 [bundles]
-logging-compile = ["slf4j-api", "jul-slf4j"]
+logging-compile = ["slf4j-api", "slf4j-jdklogging", "jul-slf4j"]
 logging-runtime = ["log4j-api", "log4j-core", "log4j-slf4j"]
 jna = ["jna-core", "jna-platform"]
 jiconfont = ["jiconfont-core", "jiconfont-swing", "jiconfont-fontawesome"]

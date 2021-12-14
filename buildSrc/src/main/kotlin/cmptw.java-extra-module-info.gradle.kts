@@ -42,6 +42,14 @@ extraJavaModuleInfo {
 
         exports("net.harawata.appdirs")
     }
+
+    // Fix log4j automatic module
+    module(libs.log4j.slf4j.get(), moduleName = "org.apache.logging.log4j.slf4j") {
+        requires("org.slf4j")
+        requires("org.apache.logging.log4j")
+
+        exports("org.apache.logging.slf4j")
+    }
 }
 
 configurations.annotationProcessor {

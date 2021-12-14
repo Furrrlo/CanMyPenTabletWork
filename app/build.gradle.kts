@@ -27,8 +27,6 @@ dependencies {
         exclude(group = libs.jna.core.get().module.group) // Already included anyway, just as a runtime dependency
     }
 
-    // TODO: Wait for log4j to fix https://github.com/qos-ch/slf4j/commit/3e2381ea694c
-    // runtimeOnly("org.slf4j:slf4j-jdk-platform-logging:$slf4j")
     implementation(libs.bundles.logging.compile)
     runtimeOnly(libs.bundles.logging.runtime)
 
@@ -53,7 +51,7 @@ jlink {
 
     options.addAll(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
 
-    // Both core and the slf4j impl are not modular
+    // log4j-core is not modular
     forceMerge("log4j-api")
     // jul to slf4j is not modular
     forceMerge("slf4j")

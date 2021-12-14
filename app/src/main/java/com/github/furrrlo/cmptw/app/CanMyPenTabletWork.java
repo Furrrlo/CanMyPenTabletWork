@@ -28,12 +28,29 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.Optional;
 
 class CanMyPenTabletWork {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CanMyPenTabletWork.class);
+    private static final Logger LOGGER;
+    static {
+        // TODO: remove this once fixed
+        // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
+        final var errorStream = System.err;
+        try {
+            System.setErr(new PrintStream(new OutputStream() {
+                @Override
+                public void write(int arg0) {
+                }
+            }));
+            LOGGER = LoggerFactory.getLogger(CanMyPenTabletWork.class);
+        } finally {
+            System.setErr(errorStream);
+        }
+    }
 
     public static void main(String[] args) {
         try {
