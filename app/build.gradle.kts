@@ -4,7 +4,7 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 plugins {
     application
     id("cmptw.java-conventions")
-    id("org.beryx.jlink") version "2.24.4"
+    id("com.github.furrrlo.jpackage")
 }
 
 version = "0.1"
@@ -72,13 +72,15 @@ jlink {
         name = "CanMyPenTabletWork"
     }
 
-    val baseImageOptions = listOf(
+    val baseImageOptions: List<String> = listOf(
         "--description", "CanMyPenTabletWork",
         "--vendor", "Francesco Ferlin",
         "--copyright", "Copyright (C) 2021 Francesco Ferlin",
     )
-    val baseInstallerOptions = listOf<String>(
+    val baseInstallerOptions: List<String> = listOf(
+        "--verbose",
 //        "--license-file", "", TODO
+//        "--temp", File(project.buildDir, "tmp-jpackage").absolutePath,
     )
 
     targetPlatform("current") {
@@ -91,9 +93,16 @@ jlink {
 
         jpackage {
             installerType = "msi"
-            installerOptions = baseInstallerOptions + listOf("--win-dir-chooser", "--win-shortcut-prompt", "--win-menu", "--win-shortcut")
+            installerOptions = baseInstallerOptions + listOf(
+                "--win-dir-chooser",
+                "--win-shortcut-prompt", "--win-menu", "--win-shortcut",
+            )
             imageOptions = baseImageOptions
 //            icon = "icon.ico"
+
+            wix(project) {
+                variable("JpxLauncher", launcherData.map { it.name })
+            }
         }
     }
 }

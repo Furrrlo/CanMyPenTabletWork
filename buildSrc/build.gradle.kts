@@ -16,6 +16,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     implementation("de.jjohannes.gradle:extra-java-module-info:0.9")
+    implementation("org.beryx:badass-jlink-plugin:2.24.4")
     // Workaround to import the TOML file, see https://github.com/gradle/gradle/issues/15383
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
 }
@@ -34,6 +35,10 @@ gradlePlugin {
         create("jflex-token-maker") {
             id = "${group}.jflex-token-maker"
             implementationClass = "com.github.furrrlo.jflex.JFlexTokenMakerPlugin"
+        }
+        create("jpackage") {
+            id = "${group}.jpackage"
+            implementationClass = "com.github.furrrlo.jpackage.JPackagePlugin"
         }
     }
 }

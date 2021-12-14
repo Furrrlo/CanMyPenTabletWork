@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<Include xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+    <!-- Workaround is only required for the uninstall, we need to remember the path -->
+    <Property Id="APPLICATIONFOLDER_PER_MACHINE">
+        <RegistrySearch Id="APPLICATIONFOLDER_REGSEARCH_HKLM" Root="HKLM" Key="Software\$(var.JpAppVendor)\$(var.JpAppName)\$(var.JpAppVersion)" Name="Path" Type="raw" />
+    </Property>
+    <Property Id="APPLICATIONFOLDER_PER_USER">
+        <RegistrySearch Id="APPLICATIONFOLDER_REGSEARCH_HKCU" Root="HKCU" Key="Software\$(var.JpAppVendor)\$(var.JpAppName)\$(var.JpAppVersion)" Name="Path" Type="raw" />
+    </Property>
+
+    <CustomAction Id="PerMachineInstall" Property="CMPTW_APPLICATIONFOLDER" Value="[APPLICATIONFOLDER_PER_MACHINE]" Execute="immediate"/>
+    <CustomAction Id="PerUserInstall" Property="CMPTW_APPLICATIONFOLDER" Value="[APPLICATIONFOLDER_PER_USER]" Execute="immediate"/>
+    <CustomAction Id="FixUninstallDir" Property="RM_RF48431AECBD69377EA800D62616352F20" Value="[CMPTW_APPLICATIONFOLDER]" Execute="immediate"/>
+
+    <InstallExecuteSequence>
+        <Custom Action="PerUserInstall" Before="CostFinalize">ALLUSERS="" OR (ALLUSERS=2 AND (MSIINSTALLPERUSER=1 OR (NOT Privileged)))</Custom>
+        <Custom Action="PerMachineInstall" After="PerUserInstall">ALLUSERS=1 OR (ALLUSERS=2 AND (MSIINSTALLPERUSER="" OR Privileged))</Custom>
+        <Custom Action="FixUninstallDir" After="PerMachineInstall">1</Custom>
+    </InstallExecuteSequence>
+
+    <!-- Use the right RegistryKey for install -->
+    <DirectoryRef Id="APPLICATIONFOLDER">
+      <Component Win64="yes" Id="cmptw_crm_rf_applicationfolder" Guid="*">
+        <RegistryKey Root="HKMU" Key="Software\$(var.JpAppVendor)\$(var.JpAppName)\$(var.JpAppVersion)">
+          <RegistryValue Type="string" KeyPath="yes" Name="CMPTW_APPLICATIONFOLDER" Value="[APPLICATIONFOLDER]"></RegistryValue>
+        </RegistryKey>
+      </Component>
+    </DirectoryRef>
+    <ComponentGroup Id="CmptwFilesFix">
+      <ComponentRef Id="cmptw_crm_rf_applicationfolder"></ComponentRef>
+    </ComponentGroup>
+
+</Include>
