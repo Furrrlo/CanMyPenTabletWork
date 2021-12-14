@@ -1,13 +1,9 @@
 package com.github.furrrlo.cmptw.app;
 
-import com.github.weisj.darklaf.LafManager;
-import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.swing.IconFontSwing;
 import com.github.furrrlo.cmptw.app.gui.CanMyPenTabletWorkTray;
 import com.github.furrrlo.cmptw.app.hook.FileBasedHookService;
 import com.github.furrrlo.cmptw.app.hook.Hook;
 import com.github.furrrlo.cmptw.app.hook.HookService;
-import com.github.furrrlo.cmptw.windows.gui.hidpi.WinWindowHiDpiFix;
 import com.github.furrrlo.cmptw.hook.KeyboardHookEvent;
 import com.github.furrrlo.cmptw.hook.KeyboardHookListener;
 import com.github.furrrlo.cmptw.hook.KeyboardHookService;
@@ -15,6 +11,10 @@ import com.github.furrrlo.cmptw.process.Process;
 import com.github.furrrlo.cmptw.process.ProcessService;
 import com.github.furrrlo.cmptw.script.ScriptEngine;
 import com.github.furrrlo.cmptw.script.ScriptEnvironment;
+import com.github.furrrlo.cmptw.windows.gui.hidpi.WinWindowHiDpiFix;
+import com.github.weisj.darklaf.LafManager;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import net.harawata.appdirs.AppDirsFactory;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
