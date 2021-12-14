@@ -3,12 +3,9 @@ package com.github.furrrlo.cmptw.windows.raw;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.platform.win32.Advapi32Util;
-import com.sun.jna.platform.win32.DBT;
+import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.DBT.DEV_BROADCAST_DEVICEINTERFACE;
-import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinReg;
 import com.sun.jna.platform.win32.WinUser.RAWINPUTDEVICELIST;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APITypeMapper;
@@ -237,12 +234,26 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     private Map<HANDLE, RawInputDevice> getCurrentDeviceList() {
         final IntByReference numDevices = new IntByReference();
         final int sizeOfRAWINPUTDEVICELIST = new RAWINPUTDEVICELIST().sizeof();
-        if(RAW_INPUT.GetRawInputDeviceList(null, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
-            throw new RawInputException();
 
-        final RAWINPUTDEVICELIST[] rawDeviceList = new RAWINPUTDEVICELIST[numDevices.getValue()];
-        if(RAW_INPUT.GetRawInputDeviceList(rawDeviceList, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
-            throw new RawInputException();
+        final RAWINPUTDEVICELIST[] rawDeviceList;
+        for(int tries = 0; ; tries++) {
+            if (RAW_INPUT.GetRawInputDeviceList(null, numDevices, sizeOfRAWINPUTDEVICELIST) < 0)
+                throw new RawInputException();
+
+            final RAWINPUTDEVICELIST[] rawDeviceList0 = new RAWINPUTDEVICELIST[numDevices.getValue()];
+            if (RAW_INPUT.GetRawInputDeviceList(rawDeviceList0, numDevices, sizeOfRAWINPUTDEVICELIST) < 0) {
+                final int err = Kernel32.INSTANCE.GetLastError();
+                // If it was a 'not big enough' kind of error, and we have tried only a few times, retry.
+                // This is because concurrency (probably), so the size value we got above was changed before we could use it.
+                if(err == WinError.ERROR_INSUFFICIENT_BUFFER && tries <= 5)
+                    continue;
+
+                throw new RawInputException(err);
+            }
+
+            rawDeviceList = rawDeviceList0;
+            break;
+        }
 
         return Arrays.stream(rawDeviceList)
                 .filter(rawDevice -> rawDevice.dwType == RawInput.RIM_TYPEKEYBOARD || rawDevice.dwType == RawInput.RIM_TYPEHID)
