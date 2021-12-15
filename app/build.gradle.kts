@@ -15,6 +15,10 @@ application {
     mainModule.set(group.toString())
 }
 
+tasks.named<JavaExec>("run") {
+    jvmArgs("-Dcmptw.ide")
+}
+
 // TODO: To use darklaf nightly build (for module support)
 repositories {
     maven {
@@ -38,6 +42,7 @@ dependencies {
     implementation(libs.appdirs) {
         exclude(group = libs.jna.core.get().module.group) // Already included anyway, just as a runtime dependency
     }
+    implementation(libs.jlaunchcmd)
 
     implementation(libs.bundles.logging.compile)
     runtimeOnly(libs.bundles.logging.runtime)

@@ -14,6 +14,7 @@ rsyntaxtextarea = "3.1.3"
 rsyntaxarea-darklaf = "0.3.5-SNAPSHOT"
 autocomplete = "3.1.2"
 autoservice = "1.0"
+jlaunchcmd = "1.1"
 
 [libraries]
 
@@ -21,6 +22,7 @@ jna-core = { module = "net.java.dev.jna:jna-jpms", version.ref = "jna" }
 jna-platform = { module = "net.java.dev.jna:jna-platform-jpms", version.ref = "jna" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 appdirs = { module = "net.harawata:appdirs", version.ref = "appdirs" }
+jlaunchcmd = { module = "io.github.furrrlo:JLaunchCmd", version.ref = "jlaunchcmd" }
 # Logging
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jdklogging = { module = "org.slf4j:slf4j-jdk-platform-logging", version.ref = "slf4j" }

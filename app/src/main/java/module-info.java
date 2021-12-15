@@ -5,6 +5,7 @@ module com.github.furrrlo.cmptw.app {
     requires jul.to.slf4j;
 
     requires net.harawata.appdirs;
+    requires io.github.furrrlo.jlaunchcmd;
 
     requires com.google.gson;
     exports com.github.furrrlo.cmptw.app.hook to com.google.gson;

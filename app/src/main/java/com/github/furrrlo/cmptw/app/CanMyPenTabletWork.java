@@ -13,6 +13,7 @@ import com.github.furrrlo.cmptw.script.ScriptEngine;
 import com.github.furrrlo.cmptw.script.ScriptEnvironment;
 import com.github.furrrlo.cmptw.windows.gui.hidpi.WinWindowHiDpiFix;
 import com.github.weisj.darklaf.LafManager;
+import io.github.furrrlo.jlaunchcmd.JLaunchCmd;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.harawata.appdirs.AppDirsFactory;
@@ -21,7 +22,6 @@ import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 import org.oxbow.swingbits.dialog.task.IContentDesign;
 import org.oxbow.swingbits.dialog.task.TaskDialogs;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -30,30 +30,48 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
 class CanMyPenTabletWork {
 
-    private static final Logger LOGGER;
-    static {
-        // TODO: remove this once fixed
-        // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
-        final var errorStream = System.err;
-        try {
-            System.setErr(new PrintStream(new OutputStream() {
-                @Override
-                public void write(int arg0) {
-                }
-            }));
-            LOGGER = LoggerFactory.getLogger(CanMyPenTabletWork.class);
-        } finally {
-            System.setErr(errorStream);
-        }
-    }
-
     public static void main(String[] args) {
         try {
+            // Here we only have jna non-redirected jul logging, which will be redirected later
+            final Path configFolder = Paths.get(Optional
+                    .ofNullable(System.getenv("CMPTW_CONFIG_DATA"))
+                    .orElse(AppDirsFactory.getInstance().getUserConfigDir("CanMyPenTabletWork", null, null)));
+
+            // Change the working directory. This is the only supported way in Java :I
+            // Do not do it if running from an IDE as it breaks debugging (for obvious reasons)
+            final boolean isRunFromIde = !System.getProperty("cmptw.ide", "false").equalsIgnoreCase("false");
+            if(!isRunFromIde && !Path.of("").toAbsolutePath().equals(configFolder.toAbsolutePath())) {
+                System.out.println("Restarting to change working dir...");
+                System.exit(JLaunchCmd.create()
+                        .restartProcessBuilder()
+                        .directory(configFolder.toFile())
+                        .inheritIO()
+                        .start()
+                        .waitFor());
+                throw new AssertionError("System.exit(...)");
+            }
+
+            // TODO: remove this once fixed
+            // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
+            final var errorStream = System.err;
+            try {
+                System.setErr(new PrintStream(new OutputStream() {
+                    @Override
+                    public void write(int arg0) {
+                    }
+                }));
+                // Force slf4j to find the log4j implementation
+                LoggerFactory.getILoggerFactory();
+            } finally {
+                System.setErr(errorStream);
+            }
+
             // Redirect jul to slf4j
             SLF4JBridgeHandler.removeHandlersForRootLogger();
             SLF4JBridgeHandler.install();
@@ -64,9 +82,7 @@ class CanMyPenTabletWork {
             final var keyboardHookService = KeyboardHookService.create();
             final var processService = ProcessService.create();
             final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
-            final HookService hookService = new FileBasedHookService(scriptEngine, Paths.get(Optional
-                    .ofNullable(System.getenv("CMPTW_CONFIG_DATA"))
-                    .orElse(AppDirsFactory.getInstance().getUserConfigDir("CanMyPenTabletWork", null, null))));
+            final HookService hookService = new FileBasedHookService(scriptEngine, configFolder);
 
             keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
 
@@ -88,7 +104,7 @@ class CanMyPenTabletWork {
             keyboardHookService.register();
             SwingUtilities.invokeLater(tray::showGui);
         } catch (Exception ex) {
-            LOGGER.error("Failed to start", ex);
+            LoggerFactory.getLogger(CanMyPenTabletWork.class).error("Failed to start", ex);
             TaskDialogs.showException(new Exception("Failed to start", ex));
             System.exit(-1);
         }
