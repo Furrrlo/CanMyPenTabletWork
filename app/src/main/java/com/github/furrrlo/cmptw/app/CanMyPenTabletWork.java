@@ -57,6 +57,10 @@ class CanMyPenTabletWork {
                 throw new AssertionError("System.exit(...)");
             }
 
+            // Set log4j config: try to use the external file (if present) in the working dir (that we just changed),
+            // otherwise it will fall back to the one on the classpath
+            System.setProperty("log4j.configurationFile", "log4j2.xml");
+
             // TODO: remove this once fixed
             // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
             final var errorStream = System.err;
