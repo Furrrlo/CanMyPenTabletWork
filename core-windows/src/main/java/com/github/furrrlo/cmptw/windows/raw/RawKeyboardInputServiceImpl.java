@@ -29,6 +29,7 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
     private static final RawInputDevice UNKNOWN_DEVICE = new RawInputDevice(
             "Unknwon",
             "Unknwon",
+            "Unknwon",
             RawInput.RIM_TYPEHID
     );
 
@@ -260,28 +261,36 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
                 .collect(Collectors.toMap(
                         rawDevice -> new HANDLE(rawDevice.hDevice.getPointer()),
                         rawDevice -> {
-                            String hwid;
+                            String deviceId;
                             try {
-                                hwid = getDeviceHwid(rawDevice.hDevice);
-                                if(hwid == null) hwid = "";
+                                deviceId = getDeviceId(rawDevice.hDevice);
+                                if(deviceId == null) deviceId = "";
                             } catch (RawInputException ex) {
                                 LOGGER.error("Failed to get device HWID for handle {}", rawDevice.hDevice, ex);
-                                hwid = "";
+                                deviceId = "";
+                            }
+
+                            String hwid;
+                            try {
+                                hwid = deviceId.isEmpty() ? "" : getDeviceHwidById(deviceId);
+                            } catch (IllegalArgumentException ex) {
+                                LOGGER.error("Failed to get device HWID for ID {}", deviceId, ex);
+                                hwid = deviceId;
                             }
 
                             String name;
                             try {
-                                name = hwid.isEmpty() ? "" : getDeviceNameByHwid(hwid);
+                                name = deviceId.isEmpty() ? "" : getDeviceNameById(deviceId);
                             } catch (IllegalArgumentException ex) {
-                                LOGGER.error("Failed to get device name for HWID {}", hwid, ex);
-                                name = hwid;
+                                LOGGER.error("Failed to get device name for ID {}", deviceId, ex);
+                                name = deviceId;
                             }
 
-                            return new RawInputDevice(hwid, name, rawDevice.dwType);
+                            return new RawInputDevice(deviceId, hwid, name, rawDevice.dwType);
                         }));
     }
 
-    private static String getDeviceHwid(HANDLE rawDevice) throws RawInputException {
+    private static String getDeviceId(HANDLE rawDevice) throws RawInputException {
         final IntByReference hwidSize = new IntByReference();
         if(RAW_INPUT.GetRawInputDeviceInfo(rawDevice, RawInput.RIDI_DEVICENAME, null, hwidSize) < 0)
             throw new RawInputException();
@@ -302,17 +311,33 @@ class RawKeyboardInputServiceImpl implements RawKeyboardInputService {
         }
     }
 
-    private static String getDeviceNameByHwid(String hwid) {
-        if(!hwid.startsWith("\\\\?\\"))
-            throw new IllegalArgumentException("HWID doesn't start with \\\\?\\" + hwid);
+    private static String getDeviceRegistryPath(String deviceId) {
+        if(!deviceId.startsWith("\\\\?\\"))
+            throw new IllegalArgumentException("HWID doesn't start with \\\\?\\" + deviceId);
 
-        var parts = hwid.substring("\\\\?\\".length()).split("#");
+        var parts = deviceId.substring("\\\\?\\".length()).split("#");
         if(parts.length < 3)
-            throw new IllegalArgumentException("HWID is missing some parts: " + hwid);
+            throw new IllegalArgumentException("HWID is missing some parts: " + deviceId);
 
+        return String.format("System\\CurrentControlSet\\Enum\\%s\\%s\\%s", parts[0], parts[1], parts[2]);
+    }
+
+    private static String getDeviceHwidById(String deviceId) {
+        final String[] arr = Advapi32Util.registryGetStringArray(
+                WinReg.HKEY_LOCAL_MACHINE,
+                getDeviceRegistryPath(deviceId),
+                "HardwareID"
+        );
+
+        if(arr.length <= 0)
+            throw new IllegalArgumentException("Device hwid is missing");
+        return arr[0];
+    }
+
+    private static String getDeviceNameById(String deviceId) {
         final String desc = Advapi32Util.registryGetStringValue(
                 WinReg.HKEY_LOCAL_MACHINE,
-                String.format("System\\CurrentControlSet\\Enum\\%s\\%s\\%s", parts[0], parts[1], parts[2]),
+                getDeviceRegistryPath(deviceId),
                 "DeviceDesc"
         );
 
