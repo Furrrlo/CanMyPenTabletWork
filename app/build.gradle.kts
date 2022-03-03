@@ -98,7 +98,7 @@ jlink {
                 "--win-dir-chooser",
                 "--win-shortcut-prompt", "--win-menu", "--win-shortcut",
             )
-            imageOptions = baseImageOptions
+            imageOptions = baseImageOptions + listOf("--win-console")
 //            icon = "icon.ico"
 
             wix(project) {

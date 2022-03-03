@@ -80,11 +80,15 @@ class CanMyPenTabletWork {
             SLF4JBridgeHandler.removeHandlersForRootLogger();
             SLF4JBridgeHandler.install();
 
+            // TODO: Run a single instance of the app
+            // TODO: jpackage Autoupdater
+
             if (!SystemTray.isSupported())
                 throw new AssertionError("System tray is not supported");
 
             final var keyboardHookService = KeyboardHookService.create();
             final var processService = ProcessService.create();
+            // TODO: Ahk exe startup selection dialog
             final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
             final HookService hookService = new FileBasedHookService(scriptEngine, configFolder);
 
@@ -120,15 +124,28 @@ class CanMyPenTabletWork {
                                                             ProcessService processService,
                                                             ScriptEngine scriptEngine,
                                                             KeyboardHookEvent event) {
+//        System.out.println(event);
+//        System.out.println(KeyEvent.getKeyText(event.awtKeyCode()));
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(event.isKeyDown() ? "PRESS " : "RELEASE ");
+        final String modifiersText;
+        if(!(modifiersText = event.getModifiersText(" + ")).isEmpty())
+            sb.append(modifiersText).append(" + ");
+        sb.append(KeyEvent.getKeyText(event.awtKeyCode()));
+        sb.append(' ').append(event.device());
+        System.out.println(sb);
 
         final Optional<Hook> maybeHook = hookService.getSaved().stream()
                 .filter(h -> h.device().id().equalsIgnoreCase(event.device().getId()))
                 .findFirst();
+//        System.out.println("Hook: " + maybeHook.isPresent());
         if(maybeHook.isEmpty())
             return KeyboardHookListener.ListenerResult.CONTINUE;
 
         final Hook hook = maybeHook.get();
         final Optional<Process> maybeProcess = processService.getProcessForPid(event.pid());
+//        System.out.println("Process: " + maybeProcess.isPresent());
         if(maybeProcess.isEmpty())
             return fallbackBehavior(event, hook);
 
@@ -136,6 +153,7 @@ class CanMyPenTabletWork {
         final Optional<Hook.ApplicationHook> maybeApplication = hook.applicationHooks().stream()
                 .filter(a -> a.application().process().equalsIgnoreCase(process.name()))
                 .findFirst();
+//        System.out.println("Application: " + maybeApplication.isPresent());
         if(maybeApplication.isEmpty())
             return fallbackBehavior(event, hook);
 
@@ -143,6 +161,7 @@ class CanMyPenTabletWork {
         final Optional<Hook.HookScript> maybeScript = application.scripts().stream()
                 .filter(s -> s.keyStroke().matches(event.awtKeyCode(), event.modifiers()))
                 .findFirst();
+//        System.out.println("Script: " + maybeScript.isPresent());
         if(maybeScript.isEmpty())
             return fallbackBehavior(event, hook);
 
