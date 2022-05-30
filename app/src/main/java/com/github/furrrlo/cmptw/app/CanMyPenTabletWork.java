@@ -96,6 +96,8 @@ class CanMyPenTabletWork {
                 UIManager.getDefaults().put(IContentDesign.COLOR_MESSAGE_BACKGROUND, properties.get("controlBackground"));
                 UIManager.getDefaults().put(IContentDesign.COLOR_INSTRUCTION_FOREGROUND, properties.get("textForegroundDefault"));
             });
+            // TODO: Theme Settings
+            LafManager.install();
             LafManager.installTheme(LafManager.getPreferredThemeStyle());
             scriptEngine.createSyntaxStyle((AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance(), FoldParserManager.get());
 

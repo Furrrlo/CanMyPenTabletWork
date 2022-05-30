@@ -31,6 +31,7 @@ extraJavaModuleInfo {
 
     module(libs.darklaf.rsyntaxarea.get(), moduleName = "darklaf.extensions.rsyntaxarea") {
         requires("darklaf.core")
+        requires("darklaf.iconset")
         requires("com.fifesoft.rsyntaxtextarea")
 
         exports("com.github.weisj.darklaf.extensions.rsyntaxarea")

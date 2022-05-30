@@ -19,15 +19,11 @@ tasks.named<JavaExec>("run") {
     jvmArgs("-Dcmptw.ide")
 }
 
-// TODO: To use darklaf nightly build (for module support)
+// TODO: To use JLaunchCmd snapshot
 repositories {
     maven {
-        url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+        url = uri("https://s01.oss.sonatype.org/content/repositories/iogithubfurrrlo-1007/")
     }
-}
-
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
 // --------------------------------------
 

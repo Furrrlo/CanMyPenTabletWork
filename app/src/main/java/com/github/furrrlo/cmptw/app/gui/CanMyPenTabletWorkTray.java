@@ -4,7 +4,7 @@ import com.github.furrrlo.cmptw.app.gui.hidpi.MultiResolutionIconFont;
 import com.github.furrrlo.cmptw.app.hook.HookService;
 import com.github.weisj.darklaf.theme.event.ThemePreferenceChangeEvent;
 import com.github.weisj.darklaf.theme.event.ThemePreferenceListener;
-import com.github.weisj.darklaf.theme.info.ColorToneRule;
+import com.github.weisj.darklaf.theme.spec.ColorToneRule;
 import jiconfont.icons.font_awesome.FontAwesome;
 import com.github.furrrlo.cmptw.hook.KeyboardHookService;
 import com.github.furrrlo.cmptw.process.ProcessService;
