@@ -19,14 +19,6 @@ tasks.named<JavaExec>("run") {
     jvmArgs("-Dcmptw.ide")
 }
 
-// TODO: To use JLaunchCmd snapshot
-repositories {
-    maven {
-        url = uri("https://s01.oss.sonatype.org/content/repositories/iogithubfurrrlo-1007/")
-    }
-}
-// --------------------------------------
-
 dependencies {
     implementation(projects.core)
     implementation(projects.win32WindowMinsizeFix)
