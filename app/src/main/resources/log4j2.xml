@@ -8,6 +8,13 @@
         </Console>
     </Appenders>
     <Loggers>
+
+        <Logger name="com.github.furrrlo.cmptw.app.CanMyPenTabletWork"
+                additivity="false"
+                level="trace">
+            <AppenderRef ref="console"/>
+        </Logger>
+
         <Root level="info">
             <AppenderRef ref="console"/>
         </Root>

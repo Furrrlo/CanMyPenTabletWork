@@ -112,12 +112,13 @@ class CanMyPenTabletWork {
                     }
                 })
         ).requestSingleInstanceThenReturn(instance -> instance.firstInstance(ctx -> {
+            final Logger logger = LoggerFactory.getLogger(CanMyPenTabletWork.class);
             final var keyboardHookService = KeyboardHookService.create();
             final var processService = ProcessService.create();
             final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
             final HookService hookService = new FileBasedHookService(scriptEngine, configFolder);
 
-            keyboardHookService.addListener((s0, l0, event) -> hook(hookService, processService, scriptEngine, event));
+            keyboardHookService.addListener((s0, l0, event) -> hook(logger, hookService, processService, scriptEngine, event));
 
             WinWindowHiDpiFix.install();
             IconFontSwing.register(FontAwesome.getIconFont());
@@ -156,10 +157,22 @@ class CanMyPenTabletWork {
         System.exit(Objects.requireNonNull(exitCode, "exitCode is null"));
     }
 
-    private static KeyboardHookListener.ListenerResult hook(HookService hookService,
+    private static KeyboardHookListener.ListenerResult hook(Logger logger,
+                                                            HookService hookService,
                                                             ProcessService processService,
                                                             ScriptEngine scriptEngine,
                                                             KeyboardHookEvent event) {
+        if(logger.isTraceEnabled()) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append(event.isKeyDown() ? "PRESS " : "RELEASE ");
+            final String modifiersText;
+            if (!(modifiersText = event.getModifiersText(" + ")).isEmpty())
+                sb.append(modifiersText).append(" + ");
+            sb.append(KeyEvent.getKeyText(event.awtKeyCode()));
+            sb.append(' ').append(event.device());
+
+            logger.trace(sb.toString());
+        }
 
         final Optional<Hook> maybeHook = hookService.getSaved().stream()
                 .filter(h -> h.device().id().equalsIgnoreCase(event.device().getId()))
