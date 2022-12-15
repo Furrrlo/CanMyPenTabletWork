@@ -1,6 +1,6 @@
 [versions]
-slf4j = "2.0.0-alpha5"
-log4j = "2.16.0"
+slf4j = "2.0.6"
+log4j = "2.19.0"
 gson = "2.8.9"
 jna = "5.9.0"
 appdirs = "1.2.1"
@@ -32,7 +32,7 @@ slf4j-jdklogging = { module = "org.slf4j:slf4j-jdk-platform-logging", version.re
 jul-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" } # To redirect jna to slf4j
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
-log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j18-impl", version.ref = "log4j" }
+log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "log4j" }
 # Gui libraries
 darklaf-core = { module = "com.github.weisj:darklaf-core", version.ref = "darklaf" }
 taskdialogs = { module = "org.bidib.org.oxbow:swingbits", version.ref = "taskdialogs" }
@@ -49,8 +49,8 @@ autoservice-annotations = { module = "com.google.auto.service:auto-service-annot
 autoservice-processor = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }
 
 [bundles]
-logging-compile = ["slf4j-api", "slf4j-jdklogging", "jul-slf4j"]
-logging-runtime = ["log4j-api", "log4j-core", "log4j-slf4j"]
+logging-compile = ["slf4j-api", "jul-slf4j"]
+logging-runtime = ["log4j-api", "log4j-core", "log4j-slf4j", "slf4j-jdklogging"]
 jna = ["jna-core", "jna-platform"]
 jiconfont = ["jiconfont-core", "jiconfont-swing", "jiconfont-fontawesome"]
 darklaf = ["darklaf-core", "darklaf-rsyntaxarea"]

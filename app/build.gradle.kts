@@ -58,9 +58,22 @@ jlink {
     options.addAll(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
 
     // log4j-core is not modular
-    forceMerge("log4j-api")
-    // jul to slf4j is not modular
+    forceMerge("log4j")
+    // jul to slf4j and log4j are not modular
     forceMerge("slf4j")
+
+    mergedModule {
+        // Log4J uses a custom ServiceLoader utils class, so the JLink plugin SuggestedMergedModuleInfoBuilder
+        // can't properly find its uses. Manually add them
+        additive = true
+        // Log4j API impl
+        uses("org.apache.logging.log4j.util.PropertySource")
+        uses("org.apache.logging.log4j.spi.Provider")
+        uses("org.apache.logging.log4j.message.ThreadDumpMessage.ThreadInfoFactory")
+        // Log4j core stuff
+        uses("org.apache.logging.log4j.core.util.WatchEventService")
+        uses("org.apache.logging.log4j.core.util.ContextDataProvider")
+    }
 
     launcher {
         name = "CanMyPenTabletWork"
@@ -76,6 +89,13 @@ jlink {
 //        "--license-file", "", TODO
 //        "--temp", File(project.buildDir, "tmp-jpackage").absolutePath,
     )
+    val modules: MutableList<String> = mutableListOf(
+        // Add logging implementation modules, noone references it
+        // (when their modularity is finally fixed ;-;)
+//        "org.slf4j.jdk.platform.logging",
+//        "org.apache.logging.log4j.core",
+//        "org.apache.logging.log4j.slf4j",
+    )
 
     targetPlatform("current") {
         setJdkHome(Jvm.current().javaHome)
@@ -83,7 +103,7 @@ jlink {
 
     if(DefaultNativePlatform.getCurrentOperatingSystem().isWindows) {
         // Add windows specific core module as a root module, noone references it otherwise
-        options.addAll(listOf("--add-modules", "com.github.furrrlo.cmptw.windows"))
+        modules.add("com.github.furrrlo.cmptw.windows");
 
         jpackage {
             installerType = "msi"
@@ -99,4 +119,6 @@ jlink {
             }
         }
     }
+
+    options.addAll(listOf("--add-modules", modules.joinToString(",")))
 }

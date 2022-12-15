@@ -31,8 +31,6 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -76,21 +74,6 @@ class CanMyPenTabletWork {
         // Set log4j config: try to use the external file (if present) in the working dir (that we just changed),
         // otherwise it will fall back to the one on the classpath
         System.setProperty("log4j.configurationFile", "log4j2.xml");
-
-        // TODO: remove this once fixed
-        // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
-        final var errorStream = System.err;
-        try {
-            System.setErr(new PrintStream(new OutputStream() {
-                @Override
-                public void write(int arg0) {
-                }
-            }));
-            // Force slf4j to find the log4j implementation
-            LoggerFactory.getILoggerFactory();
-        } finally {
-            System.setErr(errorStream);
-        }
 
         // Redirect jul to slf4j
         SLF4JBridgeHandler.removeHandlersForRootLogger();
