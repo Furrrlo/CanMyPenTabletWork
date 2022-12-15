@@ -31,6 +31,7 @@ dependencies {
         exclude(group = libs.jna.core.get().module.group) // Already included anyway, just as a runtime dependency
     }
     implementation(libs.jlaunchcmd)
+    implementation(libs.bundles.unique4j)
 
     implementation(libs.bundles.logging.compile)
     runtimeOnly(libs.bundles.logging.runtime)

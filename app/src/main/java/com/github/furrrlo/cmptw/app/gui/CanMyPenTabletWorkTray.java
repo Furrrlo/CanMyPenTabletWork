@@ -16,6 +16,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.IntConsumer;
 
 public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService, ThemePreferenceListener {
 
@@ -25,13 +26,15 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
     private final KeyboardHookService keyboardHookService;
     private final ScriptEngine scriptEngine;
     private final ProcessService processService;
+    private final IntConsumer exitFunction;
 
     private CanMyPenTabletWorkFrame gui;
 
     public CanMyPenTabletWorkTray(HookService hookService,
                                   KeyboardHookService keyboardHookService,
                                   ScriptEngine scriptEngine,
-                                  ProcessService processService) {
+                                  ProcessService processService,
+                                  IntConsumer exitFunction) {
         super(
                 new MultiResolutionIconFont(FontAwesome.PENCIL_SQUARE_O, 16, Color.WHITE),
                 "CanMyPenTabletWork");
@@ -48,6 +51,7 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
         this.keyboardHookService = keyboardHookService;
         this.scriptEngine = scriptEngine;
         this.processService = processService;
+        this.exitFunction = exitFunction;
 
         final PopupMenu popup = new PopupMenu();
 
@@ -98,7 +102,7 @@ public class CanMyPenTabletWorkTray extends TrayIcon implements LifecycleService
             }
         }
 
-        System.exit(failed ? 1 : 0);
+        exitFunction.accept(failed ? 1 : 0);
     }
 
     @Override

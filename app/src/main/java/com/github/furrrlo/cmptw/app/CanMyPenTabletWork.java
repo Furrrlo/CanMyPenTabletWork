@@ -13,6 +13,8 @@ import com.github.furrrlo.cmptw.script.ScriptEngine;
 import com.github.furrrlo.cmptw.script.ScriptEnvironment;
 import com.github.furrrlo.cmptw.windows.gui.hidpi.WinWindowHiDpiFix;
 import com.github.weisj.darklaf.LafManager;
+import in.pratanumandal.unique4j.*;
+import in.pratanumandal.unique4j.unixsocketchannel.UnixSocketChannelIpcFactory;
 import io.github.furrrlo.jlaunchcmd.JLaunchCmd;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -22,6 +24,7 @@ import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 import org.oxbow.swingbits.dialog.task.IContentDesign;
 import org.oxbow.swingbits.dialog.task.TaskDialogs;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -32,57 +35,83 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 class CanMyPenTabletWork {
 
+    private static final String APP_ID = "com.github.furrrlo.cmptw.app-huisdfhuisef-78t34678234.j8";
+
     public static void main(String[] args) {
         try {
-            // Here we only have jna non-redirected jul logging, which will be redirected later
-            final Path configFolder = Paths.get(Optional
-                    .ofNullable(System.getenv("CMPTW_CONFIG_DATA"))
-                    .orElse(AppDirsFactory.getInstance().getUserConfigDir("CanMyPenTabletWork", null, null)));
+            doMain();
+        } catch (Exception ex) {
+            LoggerFactory.getLogger(CanMyPenTabletWork.class).error("Failed to start", ex);
+            TaskDialogs.showException(new Exception("Failed to start", ex));
+            System.exit(-1);
+        }
+    }
 
-            // Change the working directory. This is the only supported way in Java :I
-            // Do not do it if running from an IDE as it breaks debugging (for obvious reasons)
-            final boolean isRunFromIde = !System.getProperty("cmptw.ide", "false").equalsIgnoreCase("false");
-            if(!isRunFromIde && !Path.of("").toAbsolutePath().equals(configFolder.toAbsolutePath())) {
-                System.out.println("Restarting to change working dir...");
-                System.exit(JLaunchCmd.create()
-                        .restartProcessBuilder()
-                        .directory(configFolder.toFile())
-                        .inheritIO()
-                        .start()
-                        .waitFor());
-                throw new AssertionError("System.exit(...)");
-            }
+    private static void doMain() throws Exception {
+        // Here we only have jna non-redirected jul logging, which will be redirected later
+        final Path configFolder = Paths.get(Optional
+                .ofNullable(System.getenv("CMPTW_CONFIG_DATA"))
+                .orElse(AppDirsFactory.getInstance().getUserConfigDir("CanMyPenTabletWork", null, null)));
 
-            // Set log4j config: try to use the external file (if present) in the working dir (that we just changed),
-            // otherwise it will fall back to the one on the classpath
-            System.setProperty("log4j.configurationFile", "log4j2.xml");
+        // Change the working directory. This is the only supported way in Java :I
+        // Do not do it if running from an IDE as it breaks debugging (for obvious reasons)
+        final boolean isRunFromIde = !System.getProperty("cmptw.ide", "false").equalsIgnoreCase("false");
+        if(!isRunFromIde && !Path.of("").toAbsolutePath().equals(configFolder.toAbsolutePath())) {
+            System.out.println("Restarting to change working dir...");
+            System.exit(JLaunchCmd.create()
+                    .restartProcessBuilder()
+                    .directory(configFolder.toFile())
+                    .inheritIO()
+                    .start()
+                    .waitFor());
+            throw new AssertionError("System.exit(...)");
+        }
 
-            // TODO: remove this once fixed
-            // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
-            final var errorStream = System.err;
-            try {
-                System.setErr(new PrintStream(new OutputStream() {
+        // Set log4j config: try to use the external file (if present) in the working dir (that we just changed),
+        // otherwise it will fall back to the one on the classpath
+        System.setProperty("log4j.configurationFile", "log4j2.xml");
+
+        // TODO: remove this once fixed
+        // Suppress slf4j error message (see https://issues.apache.org/jira/browse/LOG4J2-3139)
+        final var errorStream = System.err;
+        try {
+            System.setErr(new PrintStream(new OutputStream() {
+                @Override
+                public void write(int arg0) {
+                }
+            }));
+            // Force slf4j to find the log4j implementation
+            LoggerFactory.getILoggerFactory();
+        } finally {
+            System.setErr(errorStream);
+        }
+
+        // Redirect jul to slf4j
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+
+        if (!SystemTray.isSupported())
+            throw new AssertionError("System tray is not supported");
+
+        final Integer exitCode = Unique4j.withConfig(Unique4jConfig
+                .createDefault(APP_ID)
+                .lockFolder(configFolder.resolve("lock").toFile())
+                .ipcFactory(new UnixSocketChannelIpcFactory())
+                .exceptionHandler(new UnexpectedExceptionHandler() {
+                    private static final Logger LOGGER = LoggerFactory.getLogger(Unique4j.class);
+
                     @Override
-                    public void write(int arg0) {
+                    public void unexpectedException(IpcServer server, IpcClient client, Throwable t) {
+                        LOGGER.error("Unexpected Unique4j exception (server: {}, client: {})", server, client, t);
                     }
-                }));
-                // Force slf4j to find the log4j implementation
-                LoggerFactory.getILoggerFactory();
-            } finally {
-                System.setErr(errorStream);
-            }
-
-            // Redirect jul to slf4j
-            SLF4JBridgeHandler.removeHandlersForRootLogger();
-            SLF4JBridgeHandler.install();
-
-            if (!SystemTray.isSupported())
-                throw new AssertionError("System tray is not supported");
-
+                })
+        ).requestSingleInstanceThenReturn(instance -> instance.firstInstance(ctx -> {
             final var keyboardHookService = KeyboardHookService.create();
             final var processService = ProcessService.create();
             final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
@@ -101,19 +130,30 @@ class CanMyPenTabletWork {
             LafManager.installTheme(LafManager.getPreferredThemeStyle());
             scriptEngine.createSyntaxStyle((AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance(), FoldParserManager.get());
 
+            final CompletableFuture<Integer> exitFuture = new CompletableFuture<>();
             final CanMyPenTabletWorkTray tray;
-            SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(hookService, keyboardHookService, scriptEngine, processService));
+            SystemTray.getSystemTray().add(tray = new CanMyPenTabletWorkTray(
+                    hookService,
+                    keyboardHookService,
+                    scriptEngine,
+                    processService,
+                    exitFuture::complete));
 
             LafManager.enabledPreferenceChangeReporting(true);
             LafManager.addThemePreferenceChangeListener(tray);
 
             keyboardHookService.register();
             SwingUtilities.invokeLater(tray::showGui);
-        } catch (Exception ex) {
-            LoggerFactory.getLogger(CanMyPenTabletWork.class).error("Failed to start", ex);
-            TaskDialogs.showException(new Exception("Failed to start", ex));
-            System.exit(-1);
-        }
+
+            ctx.otherInstancesListener(otherInstanceClient -> {
+                // Other instance opened, bring up UI
+                SwingUtilities.invokeLater(tray::showGui);
+            });
+
+            return ctx.waitForEventThenReturn(exitFuture::thenAccept);
+        }).otherInstances(ctx -> ctx.doNothingThenReturn(0)));
+
+        System.exit(Objects.requireNonNull(exitCode, "exitCode is null"));
     }
 
     private static KeyboardHookListener.ListenerResult hook(HookService hookService,

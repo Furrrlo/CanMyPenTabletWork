@@ -15,6 +15,7 @@ rsyntaxarea-darklaf = "0.4.1"
 autocomplete = "3.1.2"
 autoservice = "1.0"
 jlaunchcmd = "1.1"
+unique4j = "2.1.0"
 
 [libraries]
 
@@ -23,6 +24,8 @@ jna-platform = { module = "net.java.dev.jna:jna-platform-jpms", version.ref = "j
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 appdirs = { module = "net.harawata:appdirs", version.ref = "appdirs" }
 jlaunchcmd = { module = "io.github.furrrlo:JLaunchCmd", version.ref = "jlaunchcmd" }
+unique4j-core = { module = "io.github.furrrlo:unique4j", version.ref = "unique4j" }
+unique4j-unixsocketchannel = { module = "io.github.furrrlo:unique4j-unix-socket-channel", version.ref = "unique4j" }
 # Logging
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jdklogging = { module = "org.slf4j:slf4j-jdk-platform-logging", version.ref = "slf4j" }
@@ -51,3 +54,4 @@ logging-runtime = ["log4j-api", "log4j-core", "log4j-slf4j"]
 jna = ["jna-core", "jna-platform"]
 jiconfont = ["jiconfont-core", "jiconfont-swing", "jiconfont-fontawesome"]
 darklaf = ["darklaf-core", "darklaf-rsyntaxarea"]
+unique4j = ["unique4j-core", "unique4j-unixsocketchannel"]

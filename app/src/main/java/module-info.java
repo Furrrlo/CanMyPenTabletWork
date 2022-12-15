@@ -6,6 +6,8 @@ module com.github.furrrlo.cmptw.app {
 
     requires net.harawata.appdirs;
     requires io.github.furrrlo.jlaunchcmd;
+    requires io.github.furrrlo.unique4j;
+    requires io.github.furrrlo.unique4j.unixsocketchannel;
 
     requires com.google.gson;
     exports com.github.furrrlo.cmptw.app.hook to com.google.gson;
