@@ -82,6 +82,7 @@ class CanMyPenTabletWork {
         if (!SystemTray.isSupported())
             throw new AssertionError("System tray is not supported");
 
+        final Logger logger = LoggerFactory.getLogger(CanMyPenTabletWork.class);
         final Integer exitCode = Unique4j.withConfig(Unique4jConfig
                 .createDefault(APP_ID)
                 .lockFolder(configFolder.resolve("lock").toFile())
@@ -95,7 +96,6 @@ class CanMyPenTabletWork {
                     }
                 })
         ).requestSingleInstanceThenReturn(instance -> instance.firstInstance(ctx -> {
-            final Logger logger = LoggerFactory.getLogger(CanMyPenTabletWork.class);
             final var keyboardHookService = KeyboardHookService.create();
             final var processService = ProcessService.create();
             final var scriptEngine = ScriptEnvironment.create().discoverEngine().get();
@@ -135,7 +135,10 @@ class CanMyPenTabletWork {
             });
 
             return ctx.waitForEventThenReturn(exitFuture::thenAccept);
-        }).otherInstances(ctx -> ctx.doNothingThenReturn(0)));
+        }).otherInstances(ctx -> {
+            logger.info("App was already started, sending message to the previous one...");
+            return ctx.doNothingThenReturn(0);
+        }));
 
         System.exit(Objects.requireNonNull(exitCode, "exitCode is null"));
     }
