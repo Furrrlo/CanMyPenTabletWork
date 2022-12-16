@@ -1,5 +1,7 @@
 package com.github.furrrlo.cmptw.windows.process;
 
+import com.github.furrrlo.cmptw.process.Process;
+import com.github.furrrlo.cmptw.process.ProcessService;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
@@ -16,8 +18,6 @@ import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinNT.HRESULT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APITypeMapper;
-import com.github.furrrlo.cmptw.process.Process;
-import com.github.furrrlo.cmptw.process.ProcessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class WinProcessService implements ProcessService {
         while (size < 1024 * 10) {
             processes = new int[size];
             final IntByReference returnedProcessesInBytes = new IntByReference();
-            if(!com.github.furrrlo.cmptw.windows.process.Psapi.INSTANCE.EnumProcesses(processes, processes.length * DWORD.SIZE, returnedProcessesInBytes))
+            if(!Psapi.INSTANCE.EnumProcesses(processes, processes.length * DWORD.SIZE, returnedProcessesInBytes))
                 throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
 
             returnedProcesses = returnedProcessesInBytes.getValue() / DWORD.SIZE;
@@ -84,7 +84,7 @@ public class WinProcessService implements ProcessService {
     @Override
     public List<BufferedImage> getFallbackIcons() {
         if(fallbackIcons == null) {
-            com.github.furrrlo.cmptw.windows.process.Shell32.SHFILEINFO sfi = null;
+            Shell32.SHFILEINFO sfi = null;
             try {
                 // See https://stackoverflow.com/a/39378191
                 sfi = ShellGetFileInfo(
@@ -94,7 +94,7 @@ public class WinProcessService implements ProcessService {
                         WinNT.FILE_ATTRIBUTE_NORMAL,
                         // SHGFI_IconLocation means get me the path and icon index
                         // SHGFI_UseFileAttributes means the file doesn't have to exist
-                        com.github.furrrlo.cmptw.windows.process.Shell32.SHGFI_ICONLOCATION | com.github.furrrlo.cmptw.windows.process.Shell32.SHGFI_USEFILEATTRIBUTES);
+                        Shell32.SHGFI_ICONLOCATION | Shell32.SHGFI_USEFILEATTRIBUTES);
             } catch (Win32Exception ex) {
                 LOGGER.error("Failed to get exe default icon name and index", ex);
             }
@@ -106,9 +106,9 @@ public class WinProcessService implements ProcessService {
                     LOGGER.error("Failed to get exe default icons (empty list)");
             }
 
-            com.github.furrrlo.cmptw.windows.process.Shell32.SHSTOCKICONINFO ssii = null;
+            Shell32.SHSTOCKICONINFO ssii = null;
             try {
-                ssii = ShellGetStockIconInfo(com.github.furrrlo.cmptw.windows.process.Shell32.SHSTOCKICONID.SIID_APPLICATION, com.github.furrrlo.cmptw.windows.process.Shell32.SHGSI_ICONLOCATION);
+                ssii = ShellGetStockIconInfo(Shell32.SHSTOCKICONID.SIID_APPLICATION, Shell32.SHGSI_ICONLOCATION);
             } catch (UnsatisfiedLinkError ex) {
                 LOGGER.warn("ShellGetStockIconInfo is only supported starting from Windows Vista", ex);
             } catch (Win32Exception ex) {
@@ -151,7 +151,7 @@ public class WinProcessService implements ProcessService {
 
     private BufferedImage ShellDefExtractIcon(String pszIconFile, int iIndex, int uFlags, int size) {
         final HICON[] hIcon = new HICON[1];
-        int res0 = com.github.furrrlo.cmptw.windows.process.Shell32.INSTANCE.SHDefExtractIcon(pszIconFile, iIndex, uFlags, hIcon, null, size);
+        int res0 = Shell32.INSTANCE.SHDefExtractIcon(pszIconFile, iIndex, uFlags, hIcon, null, size);
 
         if(res0 != WinError.S_OK.intValue())
             throw new RuntimeException("SHDefExtractIcon returned " + res0);
@@ -234,14 +234,14 @@ public class WinProcessService implements ProcessService {
         return image;
     }
 
-    private com.github.furrrlo.cmptw.windows.process.Shell32.SHFILEINFO ShellGetFileInfo(String pszPath, int dwFileAttributes, int uFlags) {
+    private Shell32.SHFILEINFO ShellGetFileInfo(String pszPath, int dwFileAttributes, int uFlags) {
         final HRESULT res = Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED);
         if(!Objects.equals(res, WinError.S_OK))
             throw new Win32Exception(res);
 
         try {
-            com.github.furrrlo.cmptw.windows.process.Shell32.SHFILEINFO sfi = new com.github.furrrlo.cmptw.windows.process.Shell32.SHFILEINFO();
-            int res0 = com.github.furrrlo.cmptw.windows.process.Shell32.INSTANCE.SHGetFileInfo(pszPath, dwFileAttributes, sfi, sfi.size(), uFlags);
+            Shell32.SHFILEINFO sfi = new Shell32.SHFILEINFO();
+            int res0 = Shell32.INSTANCE.SHGetFileInfo(pszPath, dwFileAttributes, sfi, sfi.size(), uFlags);
             if (res0 == 0)
                 throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
             return sfi;
@@ -250,13 +250,13 @@ public class WinProcessService implements ProcessService {
         }
     }
 
-    private com.github.furrrlo.cmptw.windows.process.Shell32.SHSTOCKICONINFO ShellGetStockIconInfo(int siid, int uFlags) {
+    private Shell32.SHSTOCKICONINFO ShellGetStockIconInfo(int siid, int uFlags) {
         HRESULT res = Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED);
         if(!Objects.equals(res, WinError.S_OK))
             throw new Win32Exception(res);
 
         try {
-            com.github.furrrlo.cmptw.windows.process.Shell32.SHSTOCKICONINFO ssii = new com.github.furrrlo.cmptw.windows.process.Shell32.SHSTOCKICONINFO();
+            Shell32.SHSTOCKICONINFO ssii = new Shell32.SHSTOCKICONINFO();
             ssii.cbSize = new DWORD(ssii.size());
             res = Shell32.INSTANCE.SHGetStockIconInfo(siid, uFlags, ssii);
             if(!Objects.equals(res, WinError.S_OK))
@@ -275,7 +275,7 @@ public class WinProcessService implements ProcessService {
         try {
             HMODULE[] hMod = new HMODULE[1];
             final var cbNeeded = new IntByReference();
-            if (!com.github.furrrlo.cmptw.windows.process.Psapi.INSTANCE.EnumProcessModulesEx(hProcess, hMod, Native.POINTER_SIZE, cbNeeded, com.github.furrrlo.cmptw.windows.process.Psapi.LIST_MODULES_ALL))
+            if (!Psapi.INSTANCE.EnumProcessModulesEx(hProcess, hMod, Native.POINTER_SIZE, cbNeeded, Psapi.LIST_MODULES_ALL))
                 throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
 
             return new WinProcess(pid, getProcessName(hProcess, hMod[0]), Path.of(getProcessFileName(hProcess, hMod[0])));
@@ -286,7 +286,7 @@ public class WinProcessService implements ProcessService {
 
     private String getProcessName(HANDLE hProcess, HMODULE hMod) {
         final var szProcessName = new Memory((long) (Kernel32.MAX_PATH + 1) * Native.WCHAR_SIZE);
-        if (com.github.furrrlo.cmptw.windows.process.Psapi.INSTANCE.GetModuleBaseName(hProcess, hMod, szProcessName, (int) (szProcessName.size() / Native.WCHAR_SIZE)) == 0)
+        if (Psapi.INSTANCE.GetModuleBaseName(hProcess, hMod, szProcessName, (int) (szProcessName.size() / Native.WCHAR_SIZE)) == 0)
             throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
 
         return W32APITypeMapper.DEFAULT == W32APITypeMapper.UNICODE ?
